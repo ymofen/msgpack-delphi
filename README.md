@@ -3,6 +3,13 @@
 It's like JSON but small and fast.
 
 thanks qmsgpack author - swish
+
+Works with
+--------
+
+* Delphi 2007 (tested)
+* XE5, XE7 (tested)
+
   
 ### Code Example
 ```Pascal
