@@ -59,13 +59,14 @@ type
     IntPtr=Integer;
   {$IFEND IntPtr}
 
-  {$if CompilerVersion < 18}
+  {$if CompilerVersion < 18} //before delphi 2007
     TBytes = array of Byte;
   {$ifend}
 
   TMsgPackType = (mptUnknown, mptNull, mptMap, mptArray, mptString, mptInteger,
   mptBoolean, mptFloat, mptSingle, mptDateTime, mptBinary);
 
+  // reserved
   IMsgPack = interface
     ['{37D3E479-7A46-435A-914D-08FBDA75B50E}'] 
   end;
