@@ -2,8 +2,7 @@
 
 It's like JSON but small and fast.
 
-qdac project url:
-  http://sourceforge.net/p/qdac3
+thanks qmsgpack author - swish
   
 ### Code Example
 ```Pascal
