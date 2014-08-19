@@ -14,7 +14,7 @@ Works with
 --------
 
 * Delphi 2007 (tested)
-* XE5, XE7 (tested)
+* XE5, XE6 (tested)
 
   
 ### Code Example
