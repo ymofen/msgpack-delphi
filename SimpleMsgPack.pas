@@ -3,7 +3,8 @@
       welcome to report bug: 185511468(qq), 185511468@qq.com
    Web site   : https://github.com/ymofen/msgpack-delphi
 
-   ide supports >=D7
+  * Delphi 2007 (tested)
+  * XE5, XE7 (tested)
 
    + first release
      2014-08-15 13:05:13

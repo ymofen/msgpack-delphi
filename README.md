@@ -2,7 +2,13 @@
 
 It's like JSON but small and fast.
 
-thanks qmsgpack author - swish
+```
+unit Owner: D10.Mofen, qdac.swish
+contract:
+       qq:185511468, 
+    email:185511468@qq.com
+welcome to report bug
+```
 
 Works with
 --------
