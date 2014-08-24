@@ -53,7 +53,7 @@ unit SimpleMsgPack;
 interface
 
 uses
-  classes, SysUtils, Contnrs;
+  classes, SysUtils, Contnrs, Variants;
 
 type
   {$IF RTLVersion<25}
@@ -100,7 +100,10 @@ type
 
   TSimpleMsgPack = class(TObject)
   private
+
     FParent:TSimpleMsgPack;
+
+    FLowerName:String;
 
     FName:String;
 
@@ -115,6 +118,8 @@ type
     function GetCount: Integer;
     procedure InnerEncodeToStream(pvStream:TStream);
     procedure InnerParseFromStream(pvStream: TStream);
+
+    procedure setName(pvName:string);
   private
     function getAsString: String;
     procedure setAsString(pvValue:string);
@@ -130,6 +135,9 @@ type
     procedure SetAsDateTime(const Value: TDateTime);
     function GetAsDateTime: TDateTime;
 
+    function GetAsVariant: Variant;
+    procedure SetAsVariant(const Value: Variant);
+
     procedure SetAsSingle(const Value: Single);
     function GetAsSingle: Single;
 
@@ -138,9 +146,12 @@ type
     function findObj(pvName:string): TSimpleMsgPack;
     function indexOf(pvName:string): Integer;
     function indexOfCaseSensitive(pvName:string): Integer;
+    function indexOfIgnoreSensitive(pvLowerCaseName: string): Integer;
+
 
   private
   
+
 
     function GetO(pvPath: String): TSimpleMsgPack;
     procedure SetO(pvPath: String; const Value: TSimpleMsgPack);
@@ -156,6 +167,8 @@ type
     
     function GetD(pvPath: String): Double;
     procedure SetD(pvPath: String; const Value: Double);
+
+    function GetItems(AIndex: Integer): TSimpleMsgPack;
 
   public
     constructor Create;
@@ -188,15 +201,21 @@ type
     property AsFloat: Double read GetAsFloat write SetAsFloat;
     property AsSingle: Single read GetAsSingle write SetAsSingle;
     property AsDateTime: TDateTime read GetAsDateTime write SetAsDateTime;
+    property AsVariant: Variant read GetAsVariant write SetAsVariant;
 
     property O[pvPath: String]: TSimpleMsgPack read GetO write SetO;
     property S[pvPath: String]: string read GetS write SetS;
     property I[pvPath: String]: Int64 read GetI write SetI;
     property B[pvPath: String]: Boolean read GetB write SetB;
     property D[pvPath: String]: Double read GetD write SetD;
+
+    property Items[AIndex: Integer]: TSimpleMsgPack read GetItems; default;
   end;
 
 implementation
+
+resourcestring
+  SVariantConvertNotSupport = 'type to convert not support!。';
 
 
 function swap16(const v): Word;
@@ -712,14 +731,14 @@ end;
 function TSimpleMsgPack.Add(pvNameKey, pvValue: string): TSimpleMsgPack;
 begin
   Result := InnerAdd;
-  Result.FName := pvNameKey;
+  Result.setName(pvNameKey);
   Result.AsString := pvValue;
 end;
 
 function TSimpleMsgPack.Add(pvNameKey: string; pvValue: Int64): TSimpleMsgPack;
 begin
   Result := InnerAdd;
-  Result.FName := pvNameKey;
+  Result.setName(pvNameKey);
   Result.AsInteger := pvValue;
 end;
 
@@ -732,7 +751,7 @@ end;
 function TSimpleMsgPack.Add(pvNameKey: string; pvValue: TBytes): TSimpleMsgPack;
 begin
   Result := InnerAdd;
-  Result.FName := pvNameKey;
+  Result.setName(pvNameKey);
   Result.FDataType := mptBinary;
   Result.FValue := pvValue;
 end;
@@ -740,7 +759,7 @@ end;
 function TSimpleMsgPack.Add(pvNameKey:String): TSimpleMsgPack;
 begin
   Result := InnerAdd;
-  Result.FName := pvNameKey;
+  Result.setName(pvNameKey);
 end;
 
 procedure TSimpleMsgPack.checkObjectDataType(ANewType: TMsgPackType = mptMap);
@@ -955,6 +974,51 @@ begin
   //showMessage(Result);
 end;
 
+/// <summary>
+///   copy from qdac3
+/// </summary>
+function TSimpleMsgPack.GetAsVariant: Variant;
+var
+  I: Integer;
+  procedure BytesAsVariant;
+  var
+    L: Integer;
+    p:PByte;
+  begin
+    L := Length(FValue);
+    Result := VarArrayCreate([0, L - 1], varByte);
+    p:=VarArrayLock(Result);
+    Move(FValue[0],p^,L);
+    VarArrayUnlock(Result);
+  end;
+
+begin
+  case FDataType of
+    mptString:
+      Result := AsString;
+    mptInteger:
+      Result := AsInteger;
+    mptFloat:
+      Result := AsFloat;
+    mptSingle:
+      Result := AsSingle;
+    mptDateTime:
+      Result := AsDateTime;
+    mptBoolean:
+      Result := AsBoolean;
+    mptArray, mptMap:
+      begin
+        Result := VarArrayCreate([0, Count - 1], varVariant);
+        for I := 0 to Count - 1 do
+          Result[I] := TSimpleMsgPack(FChildren[I]).AsVariant;
+      end;
+    mptBinary:
+      BytesAsVariant;
+  else
+    raise Exception.Create(SVariantConvertNotSupport);
+  end;
+end;
+
 function TSimpleMsgPack.GetB(pvPath: String): Boolean;
 var
   lvObj:TSimpleMsgPack;
@@ -1000,6 +1064,11 @@ begin
   begin
     Result := lvObj.AsInteger;
   end;
+end;
+
+function TSimpleMsgPack.GetItems(AIndex: Integer): TSimpleMsgPack;
+begin
+  Result := TSimpleMsgPack(FChildren[AIndex]);
 end;
 
 function TSimpleMsgPack.GetO(pvPath: String): TSimpleMsgPack;
@@ -1054,7 +1123,7 @@ end;
 
 function TSimpleMsgPack.indexOf(pvName:string): Integer;
 begin
-  Result := indexOfCaseSensitive(pvName);
+  Result := indexOfIgnoreSensitive(LowerCase(pvName));
 end;
 
 function TSimpleMsgPack.indexOfCaseSensitive(pvName:string): Integer;
@@ -1071,6 +1140,29 @@ begin
     if Length(lvObj.FName) = l then
     begin
       if lvObj.FName = pvName then
+      begin
+        Result := i;
+        break;
+      end;
+    end;
+  end;
+end;
+
+function TSimpleMsgPack.indexOfIgnoreSensitive(pvLowerCaseName: string):
+    Integer;
+var
+  i, l: Integer;
+  lvObj:TSimpleMsgPack;
+begin
+  Result := -1;
+  l := Length(pvLowerCaseName);
+  if l = 0 then exit;
+  for i := 0 to FChildren.Count-1 do
+  begin
+    lvObj := TSimpleMsgPack(FChildren[i]);
+    if Length(lvObj.FLowerName) = l then
+    begin
+      if lvObj.FLowerName = pvLowerCaseName then
       begin
         Result := i;
         break;
@@ -1521,6 +1613,64 @@ begin
   end;
 end;
 
+/// <summary>
+///   copy from qdac3
+/// </summary>
+procedure TSimpleMsgPack.SetAsVariant(const Value: Variant);
+var
+  I: Integer;
+  AType: TVarType;
+  procedure VarAsBytes;
+  var
+    L: Integer;
+    p: PByte;
+  begin
+    FDataType := mptBinary;
+    L := VarArrayHighBound(Value, 1) + 1;
+    SetLength(FValue, L);
+    p := VarArrayLock(Value);
+    Move(p^, FValue[0], L);
+    VarArrayUnlock(Value);
+  end;
+begin
+  if VarIsArray(Value) then
+  begin
+    AType := VarType(Value);
+    if (AType and varTypeMask) = varByte then
+      VarAsBytes
+    else
+    begin
+      checkObjectDataType(mptArray);
+      FChildren.Clear;
+      for I := VarArrayLowBound(Value, VarArrayDimCount(Value))
+        to VarArrayHighBound(Value, VarArrayDimCount(Value)) do
+        Add.AsVariant := Value[I];
+    end;
+  end
+  else
+  begin
+    case VarType(Value) of
+      varSmallInt, varInteger, varByte, varShortInt, varWord,
+        varLongWord, varInt64:
+        AsInteger := Value;
+      varSingle, varDouble, varCurrency:
+        AsFloat := Value;
+      varDate:
+        AsDateTime := Value;
+      varOleStr, varString{$IFDEF UNICODE}, varUString{$ENDIF}:
+        AsString := Value;
+      varBoolean:
+        AsBoolean := Value;
+      {$IF RtlVersion>=26}
+      varUInt64:
+        AsInteger := Value;
+      {$IFEND}
+    else
+      raise Exception.Create(SVariantConvertNotSupport);
+    end;
+  end;
+end;
+
 procedure TSimpleMsgPack.SetB(pvPath: String; const Value: Boolean);
 var
   lvObj:TSimpleMsgPack;
@@ -1543,6 +1693,12 @@ var
 begin
   lvObj := ForcePathObject(pvPath);
   lvObj.AsInteger := Value;
+end;
+
+procedure TSimpleMsgPack.setName(pvName: string);
+begin
+  FName := pvName;
+  FLowerName := LowerCase(FName);
 end;
 
 procedure TSimpleMsgPack.SetO(pvPath: String; const Value: TSimpleMsgPack);
@@ -1575,7 +1731,7 @@ begin
           lvTempObj.Free;  // free old
         end else
         begin
-          Value.FName := lvName;
+          Value.setName(lvName);
           lvParent.InnerAddToChildren(Value);
         end;
       end else
