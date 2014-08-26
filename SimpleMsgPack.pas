@@ -1403,7 +1403,7 @@ begin
             lvObj := InnerAdd;
             // map key
             lvObj.InnerParseFromStream(pvStream);
-            lvObj.FName := lvObj.getAsString;
+            lvObj.setName(lvObj.getAsString);
 
             // value
             lvObj.InnerParseFromStream(pvStream);
@@ -1430,7 +1430,7 @@ begin
             
             // map key
             lvObj.InnerParseFromStream(pvStream);
-            lvObj.FName := lvObj.getAsString;
+            lvObj.setName(lvObj.getAsString);
 
             // value
             lvObj.InnerParseFromStream(pvStream);
