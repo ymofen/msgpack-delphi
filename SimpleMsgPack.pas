@@ -12,6 +12,9 @@
    + add array support
      2014-08-19 12:18:47
 
+   + add andriod support
+     2014-09-08 00:45:27
+
 
    samples:
      lvMsgPack:=TSimpleMsgPack.Create;
@@ -53,7 +56,10 @@ unit SimpleMsgPack;
 interface
 
 uses
-  classes, SysUtils, Contnrs, Variants;
+  classes, SysUtils
+  {$IFDEF UNICODE}, Generics.Collections{$ELSE}, Contnrs{$ENDIF}
+  {$IFDEF MSWINDOWS}, Windows{$ENDIF}
+  ,Variants;
 
 type
   {$IF RTLVersion<25}
@@ -111,7 +117,11 @@ type
 
     FDataType:TMsgPackType;
 
+  {$IFDEF UNICODE}
+    FChildren: TObjectList<TSimpleMsgPack>;
+  {$ELSE}
     FChildren: TObjectList;
+  {$ENDIF}
 
     procedure InnerAddToChildren(obj:TSimpleMsgPack);
     function InnerAdd: TSimpleMsgPack;
@@ -304,50 +314,56 @@ end;
 
 
 // copy from qstring
-function BinToHex(p: Pointer; l: Integer; ALowerCase: Boolean): AnsiString;
+function BinToHex(p: Pointer; l: Integer; ALowerCase: Boolean): string;
 const
-  B2HConvert: array [0 .. 15] of AnsiChar = ('0', '1', '2', '3', '4', '5', '6',
+  B2HConvert: array [0 .. 15] of Char = ('0', '1', '2', '3', '4', '5', '6',
     '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F');
-  B2HConvertL: array [0 .. 15] of AnsiChar = ('0', '1', '2', '3', '4', '5', '6',
+  B2HConvertL: array [0 .. 15] of Char = ('0', '1', '2', '3', '4', '5', '6',
     '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f');
 var
-  pd: PAnsiChar;
+  pd: PChar;
   pb: PByte;
 begin
-  SetLength(Result, l shl 1);
-  pd := PAnsiChar(Result);
+  if SizeOf(Char) = 2 then
+  begin
+    SetLength(Result, l shl 1);
+  end else
+  begin
+    SetLength(Result, l);
+  end;
+  pd := PChar(Result);
   pb := p;
   if ALowerCase then
-    begin
+  begin
     while l > 0 do
-      begin
+    begin
       pd^ := B2HConvertL[pb^ shr 4];
       Inc(pd);
       pd^ := B2HConvertL[pb^ and $0F];
       Inc(pd);
       Inc(pb);
       Dec(l);
-      end;
-    end
+    end;
+  end
   else
-    begin
+  begin
     while l > 0 do
-      begin
+    begin
       pd^ := B2HConvert[pb^ shr 4];
       Inc(pd);
       pd^ := B2HConvert[pb^ and $0F];
       Inc(pd);
       Inc(pb);
       Dec(l);
-      end;
     end;
+  end;
 end;
 
 
 
-function getFirst(var strPtr:PAnsiChar; splitChars:TSysCharSet):AnsiString;
+function getFirst(var strPtr: PChar; splitChars: TSysCharSet): string;
 var
-  oPtr:PAnsiChar;
+  oPtr:PChar;
   l:Cardinal;
 begin
   oPtr := strPtr;
@@ -359,8 +375,13 @@ begin
       l := strPtr - oPtr;
       if l > 0 then
       begin
+      {$IFDEF UNICODE}
         SetLength(Result, l);
-        Move(oPtr^, Result[1], l);
+        Move(oPtr^, PChar(Result)^, l shl 1);
+      {$ELSE}
+        SetLength(Result, l);
+        Move(oPtr^, PChar(Result)^, l);
+      {$ENDIF}
         break;
       end;
     end else if (strPtr^ = #0) then
@@ -368,8 +389,13 @@ begin
       l := strPtr - oPtr;
       if l > 0 then
       begin
+      {$IFDEF UNICODE}
         SetLength(Result, l);
-        Move(oPtr^, Result[1], l);
+        Move(oPtr^, PChar(Result)^, l shl 1);
+      {$ELSE}
+        SetLength(Result, l);
+        Move(oPtr^, PChar(Result)^, l);
+      {$ENDIF}
       end;
       break;
     end;
@@ -377,15 +403,54 @@ begin
   end;
 end;
 
+
+function Utf8DecodeEx(pvValue:{$IFDEF UNICODE}TBytes{$ELSE}AnsiString{$ENDIF}; len:Cardinal):string;
+var
+{$IFDEF UNICODE}
+  lvBytes:TBytes;
+{$ELSE}
+  lvRawStr :RawByteString;
+{$ENDIF}
+begin
+{$IFDEF UNICODE}
+  lvBytes := TEncoding.Convert(TEncoding.UTF8, TEncoding.Unicode, pvValue);
+  SetLength(Result, Length(lvBytes) shr 1);
+  Move(lvBytes[0], PChar(Result)^, Length(lvBytes));
+{$ELSE}
+  result:= UTF8Decode(pvValue);
+{$ENDIF}
+end;
+
+function Utf8EncodeEx(pvValue:string):{$IFDEF UNICODE}TBytes{$ELSE}AnsiString{$ENDIF};
+var
+{$IFDEF UNICODE}
+  lvBytes:TBytes;
+  len:Cardinal;
+{$ELSE}
+  lvRawStr :RawByteString;
+{$ENDIF}
+begin
+{$IFDEF UNICODE}
+  len := length(pvValue) shl 1;
+  SetLength(lvBytes, len);
+  Move(PChar(pvValue)^, lvBytes[0], len);
+  Result := TEncoding.Convert(TEncoding.Unicode, TEncoding.UTF8, lvBytes);
+{$ELSE}
+  result:= UTF8Encode(pvValue);
+{$ENDIF}
+end;
+
+
 // copy from qmsgPack
 procedure writeString(pvValue: string; pvStream: TStream);
 var
-  lvRawStr:AnsiString;
+
+  lvRawData:{$IFDEF UNICODE}TBytes{$ELSE}AnsiString{$ENDIF};
   l:Integer;
   lvValue:TMsgPackValue;
 begin
-  lvRawStr:=Utf8Encode(pvValue);
-  l:=Length(lvRawStr);
+  lvRawData := Utf8EncodeEx(pvValue);
+  l:=Length(lvRawData);
 
   //
   //fixstr stores a byte array whose length is upto 31 bytes:
@@ -441,7 +506,7 @@ begin
     pvStream.WriteBuffer(lvValue,5);
   end;
 
-  pvStream.Write(PByte(lvRawStr)^, l);
+  pvStream.Write(PByte(lvRawData)^, l);
 end;
 
 procedure WriteBinary(p: PByte; l: Integer; pvStream: TStream);
@@ -697,7 +762,12 @@ end;
 constructor TSimpleMsgPack.Create;
 begin
   inherited Create;
-  FChildren := TObjectList.Create(true);
+  {$IFDEF UNICODE}
+    FChildren := TObjectList<TSimpleMsgPack>.Create(true);
+  {$ELSE}
+    FChildren := TObjectList.Create(true);
+  {$ENDIF}
+
 end;
 
 procedure TSimpleMsgPack.DecodeFromBytes(pvBytes: TBytes);
@@ -806,16 +876,16 @@ end;
 
 function TSimpleMsgPack.ForcePathObject(pvPath:string): TSimpleMsgPack;
 var
-  lvName:AnsiString;
-  s:AnsiString;
-  sPtr:PAnsiChar;
+  lvName:string;
+  s:string;
+  sPtr:PChar;
   lvTempObj, lvParent:TSimpleMsgPack;
   j:Integer;
 begin
   s := pvPath;
 
   lvParent := Self;
-  sPtr := PAnsiChar(s);
+  sPtr := PChar(s);
   while sPtr^ <> #0 do
   begin
     lvName := getFirst(sPtr, ['.', '/','\']);
@@ -1073,16 +1143,16 @@ end;
 
 function TSimpleMsgPack.GetO(pvPath: String): TSimpleMsgPack;
 var
-  lvName:AnsiString;
-  s:AnsiString;
-  sPtr:PAnsiChar;
+  lvName:String;
+  s:String;
+  sPtr:PChar;
   lvTempObj:TSimpleMsgPack;
 begin
   s := pvPath;
 
   Result := nil;
   lvTempObj := Self; 
-  sPtr := PAnsiChar(s);
+  sPtr := PChar(s);
   while sPtr^ <> #0 do
   begin
     lvName := getFirst(sPtr, ['.', '/','\']);
@@ -1204,7 +1274,7 @@ procedure TSimpleMsgPack.InnerParseFromStream(pvStream: TStream);
 var
   lvByte:Byte;
   lvBData: array[0..15] of Byte;
-  lvAnsiStr:AnsiString;
+  lvAnsiStr:{$IFDEF UNICODE}TBytes{$ELSE}AnsiString{$ENDIF};
   lvBytes:TBytes;
   l, i:Cardinal;
   i64:Int64;
@@ -1253,8 +1323,8 @@ begin
     begin
 
       SetLength(lvAnsiStr, l);
-      pvStream.Read(PAnsiChar(lvAnsiStr)^, l);
-      setAsString(UTF8Decode(lvAnsiStr));
+      pvStream.Read(PByte(lvAnsiStr)^, l);
+      setAsString(UTF8DecodeEx(lvAnsiStr, l));
 
 //      SetLength(lvBytes, l + 1);
 //      lvBytes[l] := 0;
@@ -1376,8 +1446,8 @@ begin
           pvStream.Read(l, 1);
 
           SetLength(lvAnsiStr, l);
-          pvStream.Read(PAnsiChar(lvAnsiStr)^, l);
-          setAsString(UTF8Decode(lvAnsiStr));
+          pvStream.Read(PByte(lvAnsiStr)^, l);
+          setAsString(UTF8DecodeEx(lvAnsiStr, l));
 
   //        SetLength(lvBytes, l + 1);
   //        lvBytes[l] := 0;
@@ -1448,8 +1518,8 @@ begin
           l := swap16(l);
 
           SetLength(lvAnsiStr, l);
-          pvStream.Read(PAnsiChar(lvAnsiStr)^, l);
-          setAsString(UTF8Decode(lvAnsiStr));
+          pvStream.Read(PByte(lvAnsiStr)^, l);
+          setAsString(UTF8DecodeEx(lvAnsiStr, l));
 
   //        SetLength(lvBytes, l + 1);
   //        lvBytes[l] := 0;
@@ -1468,8 +1538,8 @@ begin
           l := swap32(l);
 
           SetLength(lvAnsiStr, l);
-          pvStream.Read(PAnsiChar(lvAnsiStr)^, l);
-          setAsString(UTF8Decode(lvAnsiStr));
+          pvStream.Read(PByte(lvAnsiStr)^, l);
+          setAsString(UTF8DecodeEx(lvAnsiStr, l));
 
 
   //        SetLength(lvBytes, l + 1);
@@ -1550,7 +1620,7 @@ var
 begin
   if FileExists(pvFileName) then
   begin
-    if not DeleteFile(pvFileName) then
+    if not DeleteFile(PChar(pvFileName)) then
       RaiseLastOSError;
   end;
   lvFileStream := TFileStream.Create(pvFileName, fmCreate);
@@ -1703,16 +1773,16 @@ end;
 
 procedure TSimpleMsgPack.SetO(pvPath: String; const Value: TSimpleMsgPack);
 var
-  lvName:AnsiString;
-  s:AnsiString;
-  sPtr:PAnsiChar;
+  lvName:String;
+  s:String;
+  sPtr:PChar;
   lvTempObj, lvParent:TSimpleMsgPack;
   j:Integer;
 begin
   s := pvPath;
 
   lvParent := Self;
-  sPtr := PAnsiChar(s);
+  sPtr := PChar(s);
   while sPtr^ <> #0 do
   begin
     lvName := getFirst(sPtr, ['.', '/','\']);
