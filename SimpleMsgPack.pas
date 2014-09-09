@@ -183,6 +183,9 @@ type
   public
     constructor Create;
     destructor Destroy; override;
+
+    procedure clear;
+
     property Count: Integer read GetCount;
 
     procedure LoadBinaryFromStream(pvStream: TStream; pvLen: cardinal = 0);
@@ -834,6 +837,13 @@ begin
   begin
     FDataType := ANewType;
   end;
+end;
+
+procedure TSimpleMsgPack.clear;
+begin
+  FChildren.Clear;
+  FDataType := mptNull;
+  SetLength(FValue, 0);
 end;
 
 function TSimpleMsgPack.EncodeToBytes: TBytes;
