@@ -39,8 +39,6 @@ begin
 
     lvMsgPack2.DecodeFromBytes(lvBytes);
 
-    lvmsgPack2.clear;
-
 
     mmoOutPut.Lines.Add(lvMsgPack2.S['key.obj']);
 
