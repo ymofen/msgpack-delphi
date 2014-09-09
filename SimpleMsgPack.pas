@@ -405,11 +405,9 @@ end;
 
 
 function Utf8DecodeEx(pvValue:{$IFDEF UNICODE}TBytes{$ELSE}AnsiString{$ENDIF}; len:Cardinal):string;
-var
 {$IFDEF UNICODE}
+var             
   lvBytes:TBytes;
-{$ELSE}
-  lvRawStr :RawByteString;
 {$ENDIF}
 begin
 {$IFDEF UNICODE}
@@ -422,12 +420,10 @@ begin
 end;
 
 function Utf8EncodeEx(pvValue:string):{$IFDEF UNICODE}TBytes{$ELSE}AnsiString{$ENDIF};
-var
 {$IFDEF UNICODE}
+var
   lvBytes:TBytes;
   len:Cardinal;
-{$ELSE}
-  lvRawStr :RawByteString;
 {$ENDIF}
 begin
 {$IFDEF UNICODE}
