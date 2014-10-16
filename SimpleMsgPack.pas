@@ -1,4 +1,4 @@
-﻿(*
+(*
    unit Owner: D10.Mofen, qdac.swish
       welcome to report bug: 185511468(qq), 185511468@qq.com
    Web site   : https://github.com/ymofen/msgpack-delphi
@@ -587,8 +587,8 @@ begin
     end
   else//<0
     begin
-    if iVal<=-2147483648 then//64λ
-      begin
+    if iVal<=Low(Integer) then  //-2147483648  // 64 bit
+    begin
       lvValue.ValueType:=$d3;
       lvValue.BArray[0]:=(iVal shr 56) and $FF;
       lvValue.BArray[1]:=(iVal shr 48) and $FF;
@@ -599,8 +599,8 @@ begin
       lvValue.BArray[6]:=(iVal shr 8) and $FF;
       lvValue.BArray[7]:=iVal and $FF;
       AStream.WriteBuffer(lvValue,9);
-      end
-    else if iVal<=-32768 then
+    end
+    else if iVal<=Low(SmallInt) then     // -32768    // 32 bit
       begin
       lvValue.ValueType:=$d2;
       lvValue.BArray[0]:=(iVal shr 24) and $FF;
