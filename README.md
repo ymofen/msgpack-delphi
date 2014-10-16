@@ -12,7 +12,7 @@ welcome to report bug
 
 Works with
 --------
-
+* Delphi 7 (tested)
 * Delphi 2007 (tested)
 * XE5, XE6, XE7, FMX (tested)
 
