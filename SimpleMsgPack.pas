@@ -1,4 +1,4 @@
-(*
+﻿(*
    unit Owner: D10.Mofen, qdac.swish
       welcome to report bug: 185511468(qq), 185511468@qq.com
    Web site   : https://github.com/ymofen/msgpack-delphi
@@ -160,8 +160,12 @@ type
 
 
   private
-  
 
+    /// <summary>
+    ///   find object index by a path 
+    /// </summary>
+    function InnerFindPathObject(pvPath: string; var vParent: TSimpleMsgPack; var
+        vIndex: Integer): TSimpleMsgPack;
 
     function GetO(pvPath: String): TSimpleMsgPack;
     procedure SetO(pvPath: String; const Value: TSimpleMsgPack);
@@ -179,6 +183,11 @@ type
     procedure SetD(pvPath: String; const Value: Double);
 
     function GetItems(AIndex: Integer): TSimpleMsgPack;
+
+    /// <summary>
+    ///   delete a children
+    /// </summary>
+    procedure NotifyForDeleteChildren;
 
   public
     constructor Create;
@@ -207,6 +216,12 @@ type
     function Add():TSimpleMsgPack; overload;
 
     function ForcePathObject(pvPath:string): TSimpleMsgPack;
+
+    /// <summary>
+    ///  remove and free object
+    ///    false : object is not found!
+    /// </summary>
+    function DeleteObject(pvPath:String):Boolean;
 
     property AsInteger:Int64 read getAsInteger write setAsInteger;
     property AsString:string read getAsString write setAsString;
@@ -789,6 +804,19 @@ begin
   InnerParseFromStream(pvStream);
 end;
 
+function TSimpleMsgPack.DeleteObject(pvPath: String): Boolean;
+var
+  lvParent, lvObj:TSimpleMsgPack;
+  j:Integer;
+begin
+  lvObj := InnerFindPathObject(pvPath, lvParent, j);
+  Result := lvObj <> nil;
+  if Result then
+  begin
+    lvParent.FChildren.Delete(j);
+  end;
+end;
+
 destructor TSimpleMsgPack.Destroy;
 begin
   FChildren.Clear;
@@ -1149,38 +1177,10 @@ end;
 
 function TSimpleMsgPack.GetO(pvPath: String): TSimpleMsgPack;
 var
-  lvName:String;
-  s:String;
-  sPtr:PChar;
-  lvTempObj:TSimpleMsgPack;
+  lvParent:TSimpleMsgPack;
+  j:Integer;
 begin
-  s := pvPath;
-
-  Result := nil;
-  lvTempObj := Self; 
-  sPtr := PChar(s);
-  while sPtr^ <> #0 do
-  begin
-    lvName := getFirst(sPtr, ['.', '/','\']);
-    if lvName = '' then
-    begin
-      Break;
-    end else
-    begin
-      // find childrean
-      lvTempObj := lvTempObj.findObj(lvName);
-
-      if lvTempObj = nil then
-      begin
-        Break;
-      end else
-      begin
-        Result := lvTempObj;
-      end;                  
-    end;
-    if sPtr^ = #0 then Break;
-    Inc(sPtr);
-  end;
+  Result := InnerFindPathObject(pvPath, lvParent, j);
 end;
 
 function TSimpleMsgPack.GetS(pvPath: String): string;
@@ -1276,6 +1276,59 @@ begin
   end;
 end;
 
+function TSimpleMsgPack.InnerFindPathObject(pvPath: string; var vParent:
+    TSimpleMsgPack; var vIndex: Integer): TSimpleMsgPack;
+var
+  lvName:string;
+  s:string;
+  sPtr:PChar;
+  lvTempObj, lvParent:TSimpleMsgPack;
+  j:Integer;
+begin
+  s := pvPath;
+  
+  Result := nil;
+  
+  lvParent := Self;
+  sPtr := PChar(s);
+  while sPtr^ <> #0 do
+  begin
+    lvName := getFirst(sPtr, ['.', '/','\']);
+    if lvName = '' then
+    begin
+      Break;
+    end else
+    begin
+      if sPtr^ = #0 then
+      begin           // end
+        j := lvParent.indexOf(lvName);
+        if j <> -1 then
+        begin
+          Result := TSimpleMsgPack(lvParent.FChildren[j]);
+          vIndex := j;
+          vParent := lvParent;
+        end else
+        begin
+          Break;
+        end;
+      end else
+      begin
+        // find childrean
+        lvTempObj := lvParent.findObj(lvName);
+        if lvTempObj = nil then
+        begin
+          Break;
+        end else
+        begin
+          lvParent := lvTempObj;
+        end;
+      end;
+    end;
+    if sPtr^ = #0 then Break;
+    Inc(sPtr);
+  end;
+end;
+
 procedure TSimpleMsgPack.InnerParseFromStream(pvStream: TStream);
 var
   lvByte:Byte;
@@ -1296,17 +1349,19 @@ begin
     SetLength(FValue, 0);
     FChildren.Clear;
     l := lvByte - $80;
-
-    for I := 0 to l - 1 do
+    if l > 0 then  // check is empty ele
     begin
-      lvObj := InnerAdd;
+      for I := 0 to l - 1 do
+      begin
+        lvObj := InnerAdd;
 
-      // map key
-      lvObj.InnerParseFromStream(pvStream);
-      lvObj.setName(lvObj.getAsString);
+        // map key
+        lvObj.InnerParseFromStream(pvStream);
+        lvObj.setName(lvObj.getAsString);
 
-        // value
-      lvObj.InnerParseFromStream(pvStream);
+          // value
+        lvObj.InnerParseFromStream(pvStream);
+      end;
     end;
   end else if lvByte <= $9f then //fixarray	1001xxxx	0x90 - 0x9f
   begin
@@ -1315,12 +1370,14 @@ begin
     FChildren.Clear;
 
     l := lvByte - $90;
-
-    for I := 0 to l - 1 do
+    if l > 0 then  // check is empty ele
     begin
-      lvObj := InnerAdd;
-      // value
-      lvObj.InnerParseFromStream(pvStream);
+      for I := 0 to l - 1 do
+      begin
+        lvObj := InnerAdd;
+        // value
+        lvObj.InnerParseFromStream(pvStream);
+      end;
     end;
   end else if lvByte <= $bf then //fixstr	101xxxxx	0xa0 - 0xbf
   begin
@@ -1412,12 +1469,14 @@ begin
           pvStream.Read(l, 2);
 
           l := swap16(l);
-
-          for I := 0 to l - 1 do
+          if l > 0 then  // check is empty ele
           begin
-            lvObj := InnerAdd;
-            // value
-            lvObj.InnerParseFromStream(pvStream);
+            for I := 0 to l - 1 do
+            begin
+              lvObj := InnerAdd;
+              // value
+              lvObj.InnerParseFromStream(pvStream);
+            end;
           end;
         end;
       $dd: // Array 32
@@ -1434,12 +1493,14 @@ begin
           pvStream.Read(l, 4);
 
           l := swap32(l);
-
-          for I := 0 to l - 1 do
+          if l > 0 then  // check is empty ele
           begin
-            lvObj := InnerAdd;
-            // value
-            lvObj.InnerParseFromStream(pvStream);
+            for I := 0 to l - 1 do
+            begin
+              lvObj := InnerAdd;
+              // value
+              lvObj.InnerParseFromStream(pvStream);
+            end;
           end;
         end;
       $d9:   //str 8 , 255
@@ -1450,11 +1511,15 @@ begin
           //  +--------+--------+========+
           l := 0;
           pvStream.Read(l, 1);
-
-          SetLength(lvAnsiStr, l);
-          pvStream.Read(PByte(lvAnsiStr)^, l);
-          setAsString(UTF8DecodeEx(lvAnsiStr, l));
-
+          if l > 0 then  // check is empty ele
+          begin
+            SetLength(lvAnsiStr, l);
+            pvStream.Read(PByte(lvAnsiStr)^, l);
+            setAsString(UTF8DecodeEx(lvAnsiStr, l));
+          end else
+          begin
+            setAsString('');
+          end;
   //        SetLength(lvBytes, l + 1);
   //        lvBytes[l] := 0;
   //        pvStream.Read(lvBytes[0], l);
@@ -1473,16 +1538,18 @@ begin
           l := 0; // fill zero
           pvStream.Read(l, 2);
           l := swap16(l);
-
-          for I := 0 to l - 1 do
+          if l > 0 then  // check is empty ele
           begin
-            lvObj := InnerAdd;
-            // map key
-            lvObj.InnerParseFromStream(pvStream);
-            lvObj.setName(lvObj.getAsString);
+            for I := 0 to l - 1 do
+            begin
+              lvObj := InnerAdd;
+              // map key
+              lvObj.InnerParseFromStream(pvStream);
+              lvObj.setName(lvObj.getAsString);
 
-            // value
-            lvObj.InnerParseFromStream(pvStream);
+              // value
+              lvObj.InnerParseFromStream(pvStream);
+            end;
           end;
         end;
       $DF: //Object map 32
@@ -1499,17 +1566,19 @@ begin
           pvStream.Read(l, 4);
 
           l := swap32(l);
-
-          for I := 0 to l - 1 do
+          if l > 0 then  // check is empty ele
           begin
-            lvObj := InnerAdd;
-            
-            // map key
-            lvObj.InnerParseFromStream(pvStream);
-            lvObj.setName(lvObj.getAsString);
+            for I := 0 to l - 1 do
+            begin
+              lvObj := InnerAdd;
 
-            // value
-            lvObj.InnerParseFromStream(pvStream);
+              // map key
+              lvObj.InnerParseFromStream(pvStream);
+              lvObj.setName(lvObj.getAsString);
+
+              // value
+              lvObj.InnerParseFromStream(pvStream);
+            end;
           end;
         end;
       $da:    // str 16
@@ -1522,10 +1591,15 @@ begin
           l := 0; // fill zero
           pvStream.Read(l, 2);
           l := swap16(l);
-
-          SetLength(lvAnsiStr, l);
-          pvStream.Read(PByte(lvAnsiStr)^, l);
-          setAsString(UTF8DecodeEx(lvAnsiStr, l));
+          if l > 0 then  // check is empty ele
+          begin
+            SetLength(lvAnsiStr, l);
+            pvStream.Read(PByte(lvAnsiStr)^, l);
+            setAsString(UTF8DecodeEx(lvAnsiStr, l));
+          end else
+          begin
+            setAsString('');
+          end;
 
   //        SetLength(lvBytes, l + 1);
   //        lvBytes[l] := 0;
@@ -1542,10 +1616,15 @@ begin
           l := 0; // fill zero
           pvStream.Read(l, 4);
           l := swap32(l);
-
-          SetLength(lvAnsiStr, l);
-          pvStream.Read(PByte(lvAnsiStr)^, l);
-          setAsString(UTF8DecodeEx(lvAnsiStr, l));
+          if l > 0 then  // check is empty ele
+          begin
+            SetLength(lvAnsiStr, l);
+            pvStream.Read(PByte(lvAnsiStr)^, l);
+            setAsString(UTF8DecodeEx(lvAnsiStr, l));
+          end else
+          begin
+            setAsString('');
+          end;
 
 
   //        SetLength(lvBytes, l + 1);
@@ -1618,6 +1697,11 @@ begin
     SetLength(FValue, pvLen);
     pvStream.ReadBuffer(FValue[0], pvLen);
   end;
+end;
+
+procedure TSimpleMsgPack.NotifyForDeleteChildren;
+begin
+  //Result := ;
 end;
 
 procedure TSimpleMsgPack.SaveBinaryToFile(pvFileName: String);
