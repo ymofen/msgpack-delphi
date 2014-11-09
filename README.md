@@ -16,6 +16,11 @@ Works with
 * Delphi 2007 (tested)
 * XE5, XE6, XE7, FMX (tested)
 
+bug fixed:
+--------
+   * fixed int32, int64 parse bug< integer, int64 parse zero>
+     2014-11-09 22:35:27
+
   
 ### Code Example
 ```Pascal
