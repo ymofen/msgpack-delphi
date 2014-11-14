@@ -24,6 +24,13 @@
    * fix  asVariant = null (thanks for cyw(26890954))
      2014-11-14 09:05:52
 
+   * fix AsInteger = -1 bug (thanks for cyw(26890954))
+     2014-11-14 12:15:52
+
+   * fix AsInteger = -127 bug
+     check int64/integer/cardinal/word/shortint/smallint/byte assign, encode,decode, read
+     2014-11-14 12:30:38
+
 
    samples:
      lvMsgPack:=TSimpleMsgPack.Create;
@@ -196,11 +203,6 @@ type
     procedure SetD(pvPath: String; const Value: Double);
 
     function GetItems(AIndex: Integer): TSimpleMsgPack;
-
-    /// <summary>
-    ///   delete a children
-    /// </summary>
-    procedure NotifyForDeleteChildren;
 
 
   public
@@ -967,6 +969,7 @@ var
   lvTempObj, lvParent:TSimpleMsgPack;
   j:Integer;
 begin
+  Result := nil;
   s := pvPath;
 
   lvParent := Self;
@@ -1392,16 +1395,18 @@ var
   lvByte:Byte;
   lvBData: array[0..15] of Byte;
   lvAnsiStr:{$IFDEF UNICODE}TBytes{$ELSE}AnsiString{$ENDIF};
-  lvBytes:TBytes;
   l, i:Cardinal;
   i64:Int64;
   lvObj:TSimpleMsgPack;
 begin
   pvStream.Read(lvByte, 1);
-  if lvByte <=$7F then   //positive fixint	0xxxxxxx	0x00 - 0x7f
+  if lvByte in [$00 .. $7F] then   //positive fixint	0xxxxxxx	0x00 - 0x7f
   begin
+    //  +--------+
+    //  |0XXXXXXX|
+    //  +--------+
     setAsInteger(lvByte);
-  end else if lvByte <= $8f then //fixmap	1000xxxx	0x80 - 0x8f
+  end else if lvByte in [$80 .. $8F] then //fixmap	1000xxxx	0x80 - 0x8f
   begin
     FDataType := mptMap;
     SetLength(FValue, 0);
@@ -1421,7 +1426,7 @@ begin
         lvObj.InnerParseFromStream(pvStream);
       end;
     end;
-  end else if lvByte <= $9f then //fixarray	1001xxxx	0x90 - 0x9f
+  end else if lvByte in [$90 .. $9F] then //fixarray	1001xxxx	0x90 - 0x9f
   begin
     FDataType := mptArray;
     SetLength(FValue, 0);
@@ -1437,7 +1442,7 @@ begin
         lvObj.InnerParseFromStream(pvStream);
       end;
     end;
-  end else if lvByte <= $bf then //fixstr	101xxxxx	0xa0 - 0xbf
+  end else if lvByte in [$A0 .. $BF] then //fixstr	101xxxxx	0xa0 - 0xbf
   begin
     l := lvByte - $A0;   // str len
     if l > 0 then
@@ -1455,22 +1460,31 @@ begin
     begin
       setAsString('');
     end;
+  end else if lvByte in [$E0 .. $FF] then
+  begin
+    //  negative fixnum stores 5-bit negative integer
+    //  +--------+
+    //  |111YYYYY|
+    //  +--------+
+    setAsInteger(Shortint(lvByte));
   end else
   begin
     case lvByte of
       $C0: // null
-      begin
-        FDataType := mptNull;
-        SetLength(FValue, 0);
-      end;
+        begin
+          FDataType := mptNull;
+          SetLength(FValue, 0);
+        end;
+      $C1: // (never used)
+        raise Exception.Create('(never used) type $c1');
       $C2: // False
-      begin
-        SetAsBoolean(False);
-      end;
+        begin
+          SetAsBoolean(False);
+        end;
       $C3: // True
-      begin
-        SetAsBoolean(True);
-      end;
+        begin
+          SetAsBoolean(True);
+        end;
       $C4: // 短二进制，最长255字节
       begin
         FDataType := mptBinary;
@@ -1503,6 +1517,10 @@ begin
           SetLength(FValue, l);
           pvStream.Read(FValue[0], l);
         end;
+      $c7,$c8,$c9:      //ext 8	11000111	0xc7, ext 16	11001000	0xc8, ext 32	11001001	0xc9
+        begin
+          raise Exception.Create('(ext8,ext16,ex32) type $c7,$c8,$c9');
+        end;
       $ca: // float 32
         begin
           pvStream.Read(lvBData[0], 4);
@@ -1512,6 +1530,49 @@ begin
         begin
           pvStream.Read(lvBData[0], 8);
           AsSingle := swap(PDouble(@lvBData[0])^);
+        end;
+      $cc: // UInt8
+        begin
+          //      uint 8 stores a 8-bit unsigned integer
+          //      +--------+--------+
+          //      |  0xcc  |ZZZZZZZZ|
+          //      +--------+--------+
+          l := 0;
+          pvStream.Read(l, 1);
+          setAsInteger(l);
+        end;
+      $cd:
+        begin
+          //    uint 16 stores a 16-bit big-endian unsigned integer
+          //    +--------+--------+--------+
+          //    |  0xcd  |ZZZZZZZZ|ZZZZZZZZ|
+          //    +--------+--------+--------+
+          l := 0;
+          pvStream.Read(l, 2);
+          l := swap16(l);
+          SetAsInteger(Word(l));
+        end;
+      $ce:
+        begin
+          //  uint 32 stores a 32-bit big-endian unsigned integer
+          //  +--------+--------+--------+--------+--------+
+          //  |  0xce  |ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ
+          //  +--------+--------+--------+--------+--------+
+          l := 0;
+          pvStream.Read(l, 4);
+          l := swap32(l);
+          setAsInteger(Cardinal(l));
+        end;
+      $cf:
+        begin
+          //  uint 64 stores a 64-bit big-endian unsigned integer
+          //  +--------+--------+--------+--------+--------+--------+--------+--------+--------+
+          //  |  0xcf  |ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|
+          //  +--------+--------+--------+--------+--------+--------+--------+--------+--------+
+          i64 := 0;
+          pvStream.Read(i64, 8);
+          i64 := swap64(i64);
+          setAsInteger(i64);
         end;
       $dc: // array 16
         begin
@@ -1690,60 +1751,43 @@ begin
   //        pvStream.Read(lvBytes[0], l);
   //        setAsString(UTF8Decode(PAnsiChar(@lvBytes[0])));
         end;
-      $cc, $d0:   //uint 8, int 8
-      begin
-        //      uint 8 stores a 8-bit unsigned integer
-        //      +--------+--------+
-        //      |  0xcc  |ZZZZZZZZ|
-        //      +--------+--------+
-        //      int 8 stores a 8-bit signed integer
-        //      +--------+--------+
-        //      |  0xd0  |ZZZZZZZZ|
-        //      +--------+--------+
+      $d0:   //int 8
+        begin
+          //      int 8 stores a 8-bit signed integer
+          //      +--------+--------+
+          //      |  0xd0  |ZZZZZZZZ|
+          //      +--------+--------+
 
-        l := 0;
-        pvStream.Read(l, 1);
-        setAsInteger(l);
-      end;
-      $cd, $d1:
-      begin
-        //    uint 16 stores a 16-bit big-endian unsigned integer
-        //    +--------+--------+--------+
-        //    |  0xcd  |ZZZZZZZZ|ZZZZZZZZ|
-        //    +--------+--------+--------+
-        //
-        //    int 16 stores a 16-bit big-endian signed integer
-        //    +--------+--------+--------+
-        //    |  0xd1  |ZZZZZZZZ|ZZZZZZZZ|
-        //    +--------+--------+--------+
+          l := 0;
+          pvStream.Read(l, 1);
+          SetAsInteger(ShortInt(l));
+        end;
+      $d1:
+        begin
+          //    int 16 stores a 16-bit big-endian signed integer
+          //    +--------+--------+--------+
+          //    |  0xd1  |ZZZZZZZZ|ZZZZZZZZ|
+          //    +--------+--------+--------+
 
-        l := 0;
-        pvStream.Read(l, 2);
-        l := swap16(l);
-        setAsInteger(l);
-      end;
+          l := 0;
+          pvStream.Read(l, 2);
+          l := swap16(l);
+          SetAsInteger(SmallInt(l));
+        end;
 
-      $ce, $d2:
+      $d2:
+        begin
+          //  int 32 stores a 32-bit big-endian signed integer
+          //  +--------+--------+--------+--------+--------+
+          //  |  0xd2  |ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|
+          //  +--------+--------+--------+--------+--------+
+          l := 0;
+          pvStream.Read(l, 4);
+          l := swap32(l);
+          setAsInteger(Integer(l));
+        end;
+      $d3:
       begin
-        //  uint 32 stores a 32-bit big-endian unsigned integer
-        //  +--------+--------+--------+--------+--------+
-        //  |  0xce  |ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ
-        //  +--------+--------+--------+--------+--------+
-        //  int 32 stores a 32-bit big-endian signed integer
-        //  +--------+--------+--------+--------+--------+
-        //  |  0xd2  |ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|
-        //  +--------+--------+--------+--------+--------+
-        l := 0;
-        pvStream.Read(l, 4);
-        l := swap32(l);
-        setAsInteger(l);
-      end;
-      $cf, $d3:
-      begin
-        //  uint 64 stores a 64-bit big-endian unsigned integer
-        //  +--------+--------+--------+--------+--------+--------+--------+--------+--------+
-        //  |  0xcf  |ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|
-        //  +--------+--------+--------+--------+--------+--------+--------+--------+--------+
         //  int 64 stores a 64-bit big-endian signed integer
         //  +--------+--------+--------+--------+--------+--------+--------+--------+--------+
         //  |  0xd3  |ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|
@@ -1751,7 +1795,7 @@ begin
         i64 := 0;
         pvStream.Read(i64, 8);
         i64 := swap64(i64);
-        setAsInteger(i64);
+        setAsInteger(Int64(i64));
       end;   
     end;
   end;
@@ -1786,11 +1830,6 @@ begin
     SetLength(FValue, pvLen);
     pvStream.ReadBuffer(FValue[0], pvLen);
   end;
-end;
-
-procedure TSimpleMsgPack.NotifyForDeleteChildren;
-begin
-  //Result := ;
 end;
 
 procedure TSimpleMsgPack.SaveBinaryToFile(pvFileName: String);

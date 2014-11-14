@@ -33,7 +33,7 @@ object Form2: TForm2
   object mmoOutPut: TMemo
     Left = 8
     Top = 72
-    Width = 537
+    Width = 529
     Height = 249
     TabOrder = 2
   end
@@ -47,7 +47,7 @@ object Form2: TForm2
     OnClick = btnDeleteClick
   end
   object Button1: TButton
-    Left = 568
+    Left = 592
     Top = 136
     Width = 75
     Height = 25
@@ -63,5 +63,23 @@ object Form2: TForm2
     Caption = 'Button2'
     TabOrder = 5
     OnClick = Button2Click
+  end
+  object Button3: TButton
+    Left = 592
+    Top = 192
+    Width = 75
+    Height = 25
+    Caption = 'Button3'
+    TabOrder = 6
+    OnClick = Button3Click
+  end
+  object btnCheckInteger: TButton
+    Left = 592
+    Top = 248
+    Width = 105
+    Height = 25
+    Caption = 'btnCheckInteger'
+    TabOrder = 7
+    OnClick = btnCheckIntegerClick
   end
 end

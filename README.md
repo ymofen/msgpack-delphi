@@ -26,6 +26,13 @@ changes:
 
    * fix  asVariant = null (thanks for cyw(26890954))
      2014-11-14 09:05:52
+     
+   * fix AsInteger = -1 bug (thanks for cyw(26890954))
+     2014-11-14 12:15:52
+
+   * fix AsInteger = -127 bug
+     check int64/integer/cardinal/word/shortint/smallint/byte assign, encode,decode, read
+     2014-11-14 12:30:38
 
   
 ### Code Example
