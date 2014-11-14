@@ -1154,6 +1154,8 @@ var
 
 begin
   case FDataType of
+    mptNull:
+      Result := null;
     mptString:
       Result := AsString;
     mptInteger:
