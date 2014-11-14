@@ -18,6 +18,12 @@
    * fixed int32, int64 parse bug< integer, int64 parse zero>
      2014-11-09 22:35:27
 
+   + add EncodeToFile/DecodeFromFile
+     2014-11-13 12:30:58
+
+   * fix  asVariant = null (thanks for cyw(26890954))
+     2014-11-14 09:05:52
+
 
    samples:
      lvMsgPack:=TSimpleMsgPack.Create;
@@ -212,7 +218,11 @@ type
     procedure SaveBinaryToFile(pvFileName:String);
 
     procedure EncodeToStream(pvStream:TStream);
+    procedure EncodeToFile(pvFileName:string);
+
+
     procedure DecodeFromStream(pvStream:TStream);
+    procedure DecodeFromFile(pvFileName:string);
 
     function EncodeToBytes: TBytes;
     procedure DecodeFromBytes(pvBytes:TBytes); 
@@ -809,6 +819,21 @@ begin
 
 end;
 
+procedure TSimpleMsgPack.DecodeFromFile(pvFileName: string);
+var
+  lvFileStream:TFileStream;
+begin
+  if FileExists(pvFileName) then
+  begin
+    lvFileStream := TFileStream.Create(pvFileName, fmOpenRead);
+    try
+      DecodeFromStream(lvFileStream);
+    finally
+      lvFileStream.Free;
+    end;
+  end;
+end;
+
 procedure TSimpleMsgPack.DecodeFromStream(pvStream: TStream);
 begin
   InnerParseFromStream(pvStream);
@@ -896,6 +921,22 @@ begin
     lvStream.Read(Result[0], lvStream.Size);
   finally
     lvStream.Free;
+  end;
+end;
+
+procedure TSimpleMsgPack.EncodeToFile(pvFileName: string);
+var
+  lvFileStream:TFileStream;
+begin
+  if FileExists(pvFileName) then
+    lvFileStream := TFileStream.Create(pvFileName, fmOpenWrite)
+  else
+    lvFileStream := TFileStream.Create(pvFileName, fmCreate);
+  try
+    lvFileStream.Size := 0;
+    EncodeToStream(lvFileStream);
+  finally
+    lvFileStream.Free;
   end;
 end;
 
@@ -1726,7 +1767,7 @@ begin
     finally
       lvFileStream.Free;
     end;
-  end;                                   
+  end;
 end;
 
 procedure TSimpleMsgPack.LoadBinaryFromStream(pvStream: TStream; pvLen:
@@ -1874,12 +1915,18 @@ begin
         AsString := Value;
       varBoolean:
         AsBoolean := Value;
+      varNull,varEmpty,varUnknown:
+        begin
+          FDataType:=mptNull;
+          SetLength(FValue, 0);
+        end;
       {$IF RtlVersion>=26}
       varUInt64:
         AsInteger := Value;
       {$IFEND}
     else
-      raise Exception.Create(SVariantConvertNotSupport);
+      // null
+      ;//raise Exception.Create(SVariantConvertNotSupport);
     end;
   end;
 end;

@@ -13,9 +13,11 @@ type
     mmoOutPut: TMemo;
     btnDelete: TButton;
     Button1: TButton;
+    Button2: TButton;
     procedure btnDeleteClick(Sender: TObject);
     procedure btnTesterClick(Sender: TObject);
     procedure Button1Click(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
   private
     { Private declarations }
   public
@@ -66,7 +68,7 @@ begin
     lvmsgPack.I['Cardinal'] := High(Cardinal);
     lvmsgPack.I['Int64'] := High(Int64);
     //lvmsgPack.I['start'] := lvmsgPack.I['start'] + 600;
-    
+
     lvBytes := lvMsgPack.EncodeToBytes;
 
     lvMsgPack2.clear;
@@ -97,6 +99,25 @@ begin
   lvmsgPack.DecodeFromStream(lvStream);
 
   mmoOutPut.Lines.Add(IntToStr(lvmsgPack.I['start']));
+
+end;
+
+procedure TForm2.Button2Click(Sender: TObject);
+var
+  lvmsgPack,lvMsgPack2, lvTempPack:TSimpleMsgPack;
+  lvBytes:TBytes;
+begin
+  lvmsgPack := TSimpleMsgPack.Create;
+  lvMsgPack2 := TSimpleMsgPack.Create;
+  try
+    lvmsgPack.AsVariant := null;
+
+    lvBytes := lvMsgPack.EncodeToBytes;
+
+  finally
+    lvMsgPack2.Free;
+    lvMsgPack.Free;
+  end;
 
 end;
 

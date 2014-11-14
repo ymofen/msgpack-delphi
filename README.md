@@ -16,10 +16,16 @@ Works with
 * Delphi 2007 (tested)
 * XE5, XE6, XE7, FMX (tested)
 
-bug fixed:
+changes:
 --------
    * fixed int32, int64 parse bug< integer, int64 parse zero>
      2014-11-09 22:35:27
+     
+   + add EncodeToFile/DecodeFromFile
+     2014-11-13 12:30:58
+
+   * fix  asVariant = null (thanks for cyw(26890954))
+     2014-11-14 09:05:52
 
   
 ### Code Example
