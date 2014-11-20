@@ -114,11 +114,13 @@ begin
   lvmsgPack := TSimpleMsgPack.Create;
   lvMsgPack2 := TSimpleMsgPack.Create;
   try
-    lvmsgPack.AsInteger := -127;
+    lvmsgPack.AsDateTime := Now();
 
     lvBytes := lvMsgPack.EncodeToBytes;
 
     lvMsgPack2.DecodeFromBytes(lvBytes);
+
+    ShowMessage(FormatDateTime('yyyy-MM-dd hh:nn:ss.zzz', lvMsgPack2.AsDateTime));
 
     ShowMessage(lvMsgPack2.AsVariant);
 

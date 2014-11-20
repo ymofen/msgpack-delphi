@@ -1331,7 +1331,7 @@ begin
     mptString: writeString(Self.getAsString, pvStream);
     mptInteger: WriteInt(self.getAsInteger, pvStream);
     mptBoolean: WriteBoolean(self.GetAsBoolean, pvStream);
-    mptFloat: WriteFloat(GetAsFloat, pvStream);
+    mptDateTime, mptFloat: WriteFloat(GetAsFloat, pvStream);
     mptSingle: WriteSingle(GetAsSingle, pvStream);
     mptBinary: WriteBinary(PByte(@FValue[0]), Length(FValue), pvStream);
   end;
@@ -1891,6 +1891,7 @@ end;
 procedure TSimpleMsgPack.SetAsSingle(const Value: Single);
 begin
   FDataType := mptSingle;
+  SetLength(FValue, SizeOf(Single));
   PSingle(FValue)^ := Value;
 end;
 
