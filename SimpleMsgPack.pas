@@ -1529,7 +1529,7 @@ begin
       $cb: // Float 64
         begin
           pvStream.Read(lvBData[0], 8);
-          AsSingle := swap(PDouble(@lvBData[0])^);
+          AsFloat := swap(PDouble(@lvBData[0])^);
         end;
       $cc: // UInt8
         begin
