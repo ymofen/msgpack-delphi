@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, SimpleMsgPack;
+  Dialogs, StdCtrls, SimpleMsgPack, uByteTools;
 
 type
   TForm2 = class(TForm)
@@ -16,12 +16,16 @@ type
     Button2: TButton;
     Button3: TButton;
     btnCheckInteger: TButton;
+    Button4: TButton;
+    btnFile: TButton;
     procedure btnDeleteClick(Sender: TObject);
     procedure btnTesterClick(Sender: TObject);
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
     procedure Button3Click(Sender: TObject);
     procedure btnCheckIntegerClick(Sender: TObject);
+    procedure btnFileClick(Sender: TObject);
+    procedure Button4Click(Sender: TObject);
   private
     { Private declarations }
   public
@@ -114,15 +118,15 @@ begin
   lvmsgPack := TSimpleMsgPack.Create;
   lvMsgPack2 := TSimpleMsgPack.Create;
   try
-    lvmsgPack.AsDateTime := Now();
+    lvmsgPack.AsFloat := 2.507182;
 
     lvBytes := lvMsgPack.EncodeToBytes;
 
     lvMsgPack2.DecodeFromBytes(lvBytes);
 
-    ShowMessage(FormatDateTime('yyyy-MM-dd hh:nn:ss.zzz', lvMsgPack2.AsDateTime));
+    ShowMessage(lvMsgPack2.AsString);
 
-    ShowMessage(lvMsgPack2.AsVariant);
+   // ShowMessage(lvMsgPack2.AsVariant);
 
   finally
     lvMsgPack2.Free;
@@ -186,6 +190,63 @@ begin
     lvMsgPack2.Free;
     lvMsgPack.Free;
   end;
+
+end;
+
+// v and outVal is can't the same value
+procedure swap64Ex(const v; out outVal);
+begin
+  // FF, EE, DD, CC, BB, AA, 99, 88 : 88->1 ,99->2 ....
+  PByte(@outVal)^ := PByte(IntPtr(@v) + 7)^;
+  PByte(IntPtr(@outVal) + 1)^ := PByte(IntPtr(@v) + 6)^;
+  PByte(IntPtr(@outVal) + 2)^ := PByte(IntPtr(@v) + 5)^;
+  PByte(IntPtr(@outVal) + 3)^ := PByte(IntPtr(@v) + 4)^;
+  PByte(IntPtr(@outVal) + 4)^ := PByte(IntPtr(@v) + 3)^;
+  PByte(IntPtr(@outVal) + 5)^ := PByte(IntPtr(@v) + 2)^;
+  PByte(IntPtr(@outVal) + 6)^ := PByte(IntPtr(@v) + 1)^;
+  PByte(IntPtr(@outVal) + 7)^ := PByte(@v)^;
+end;
+
+//function swap(v: Double): Double;
+//var
+//  d1:Double;
+//begin
+//  swap64Ex(v, d1);
+//  Result := d1;
+//end;
+
+procedure TForm2.btnFileClick(Sender: TObject);
+var
+  P:TSimpleMsgPack;
+
+var
+  P2:TSimpleMsgPack;
+begin
+  P:=TSimpleMsgPack.Create;
+  P.I['A']:=234;
+  P.SaveBinaryToFile('C:\a.txt');
+  P.Free;
+
+
+
+  P2:=TSimpleMsgPack.Create;
+  P2.DecodeFromFile('C:\a.txt');
+  ShowMessage(IntToStr(P2.I['A']));
+  P2.Free;
+
+end;
+
+procedure TForm2.Button4Click(Sender: TObject);
+var
+  d, d1:Double;
+begin
+  d := 2.507182;
+  mmoOutPut.Lines.Add(TByteTools.varToByteString(d, SizeOf(Double)));
+
+//  //swap64Ex(d, d1);
+//  d1 := swap(d);
+//  mmoOutPut.Lines.Add(TByteTools.varToByteString(d1, SizeOf(Double)));
+
 
 end;
 

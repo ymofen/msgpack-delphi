@@ -48,7 +48,7 @@ object Form2: TForm2
   end
   object Button1: TButton
     Left = 592
-    Top = 136
+    Top = 103
     Width = 75
     Height = 25
     Caption = 'Button1'
@@ -66,7 +66,7 @@ object Form2: TForm2
   end
   object Button3: TButton
     Left = 592
-    Top = 192
+    Top = 159
     Width = 75
     Height = 25
     Caption = 'Button3'
@@ -75,11 +75,29 @@ object Form2: TForm2
   end
   object btnCheckInteger: TButton
     Left = 592
-    Top = 248
+    Top = 215
     Width = 105
     Height = 25
     Caption = 'btnCheckInteger'
     TabOrder = 7
     OnClick = btnCheckIntegerClick
+  end
+  object Button4: TButton
+    Left = 592
+    Top = 263
+    Width = 75
+    Height = 25
+    Caption = 'Button4'
+    TabOrder = 8
+    OnClick = Button4Click
+  end
+  object btnFile: TButton
+    Left = 328
+    Top = 41
+    Width = 75
+    Height = 25
+    Caption = 'btnFile'
+    TabOrder = 9
+    OnClick = btnFileClick
   end
 end

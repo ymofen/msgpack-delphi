@@ -31,6 +31,10 @@
      check int64/integer/cardinal/word/shortint/smallint/byte assign, encode,decode, read
      2014-11-14 12:30:38
 
+   * fix AsFloat = 2.507182 bug
+     thanks fo [珠海]-芒果  1939331207
+     2014-11-21 12:37:04
+
 
    samples:
      lvMsgPack:=TSimpleMsgPack.Create;
@@ -106,8 +110,8 @@ type
       5:(I32Val:Integer);
       6:(U64Val:UInt64);
       7:(I64Val:Int64);
-      8:(F32Val:Single);
-      9:(F64Val:Double);
+      //8:(F32Val:Single);
+      //9:(F64Val:Double);
       10:(BArray:array[0..16] of Byte);
   end;
 
@@ -329,14 +333,14 @@ begin
   PByte(IntPtr(@outVal) + 1)^ := PByte(@v)^;
 end;
 
-// overload swap
-function swap(v:Single):Single; overload;
+// overload swap, result type is integer, because single maybe NaN
+function swap(v:Single): Integer; overload;
 begin
   swap16Ex(v, Result);
 end;
 
 // overload swap
-function swap(v:word):Word; overload;
+function swap(v:word): Word; overload;
 begin
   swap16Ex(v, Result);
 end;
@@ -347,7 +351,8 @@ begin
   swap32Ex(v, Result);
 end;
 
-function swap(v:Double):Double; overload;
+// swap , result type is Int64, because Double maybe NaN
+function swap(v:Double): Int64; overload;
 begin
   swap64Ex(v, Result);
 end;
@@ -670,8 +675,8 @@ end;
 procedure WriteFloat(pvVal: Double; AStream: TStream);
 var
   lvValue:TMsgPackValue;
-begin
-  lvValue.F64Val := swap(pvVal);
+begin 
+  lvValue.i64Val := swap(pvVal);
   lvValue.ValueType := $CB;
   AStream.WriteBuffer(lvValue, 9);
 end;
@@ -680,7 +685,7 @@ procedure WriteSingle(pvVal: Single; AStream: TStream);
 var
   lvValue:TMsgPackValue;
 begin
-  lvValue.F64Val := swap(pvVal);
+  lvValue.I32Val := swap(pvVal);
   lvValue.ValueType := $CB;
   AStream.WriteBuffer(lvValue, 5);
 end;
@@ -1528,8 +1533,16 @@ begin
         end;
       $cb: // Float 64
         begin
+
           pvStream.Read(lvBData[0], 8);
-          AsFloat := swap(PDouble(@lvBData[0])^);
+
+          // swap to int64, and lvBData is not valid double value (for IEEE)
+          i64 := swap64(lvBData[0]);
+
+          //
+          AsFloat := PDouble(@i64)^;
+
+         // AsFloat := swap(PDouble(@lvBData[0])^);
         end;
       $cc: // UInt8
         begin
