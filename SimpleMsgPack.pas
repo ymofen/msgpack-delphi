@@ -336,7 +336,7 @@ end;
 // overload swap, result type is integer, because single maybe NaN
 function swap(v:Single): Integer; overload;
 begin
-  swap16Ex(v, Result);
+  swap32Ex(v, Result);
 end;
 
 // overload swap
@@ -686,7 +686,7 @@ var
   lvValue:TMsgPackValue;
 begin
   lvValue.I32Val := swap(pvVal);
-  lvValue.ValueType := $CB;
+  lvValue.ValueType := $CA;
   AStream.WriteBuffer(lvValue, 5);
 end;
 
@@ -1399,9 +1399,10 @@ procedure TSimpleMsgPack.InnerParseFromStream(pvStream: TStream);
 var
   lvByte:Byte;
   lvBData: array[0..15] of Byte;
+  lvSwapData: array[0..7] of Byte;
   lvAnsiStr:{$IFDEF UNICODE}TBytes{$ELSE}AnsiString{$ENDIF};
   l, i:Cardinal;
-  i64:Int64;
+  i64 :Int64;
   lvObj:TSimpleMsgPack;
 begin
   pvStream.Read(lvByte, 1);
@@ -1491,26 +1492,26 @@ begin
           SetAsBoolean(True);
         end;
       $C4: // 短二进制，最长255字节
-      begin
-        FDataType := mptBinary;
+        begin
+          FDataType := mptBinary;
 
-        l := 0; // fill zero
-        pvStream.Read(l, 1);
+          l := 0; // fill zero
+          pvStream.Read(l, 1);
 
-        SetLength(FValue, l);
-        pvStream.Read(FValue[0], l);
-      end;
+          SetLength(FValue, l);
+          pvStream.Read(FValue[0], l);
+        end;
       $C5: // 二进制，16位，最长65535B
-      begin
-        FDataType := mptBinary;
+        begin
+          FDataType := mptBinary;
 
-        l := 0; // fill zero
-        pvStream.Read(l, 2);
-        l := swap16(l);
+          l := 0; // fill zero
+          pvStream.Read(l, 2);
+          l := swap16(l);
 
-        SetLength(FValue, l);
-        pvStream.Read(FValue[0], l);
-      end;
+          SetLength(FValue, l);
+          pvStream.Read(FValue[0], l);
+        end;
       $C6: // 二进制，32位，最长2^32-1
         begin
           FDataType := mptBinary;
@@ -1526,10 +1527,13 @@ begin
         begin
           raise Exception.Create('(ext8,ext16,ex32) type $c7,$c8,$c9');
         end;
-      $ca: // float 32
+      $CA: // float 32
         begin
           pvStream.Read(lvBData[0], 4);
-          AsSingle := swap(PSingle(@lvBData[0])^);
+
+          swap32Ex(lvBData[0], lvSwapData[0]);
+
+          AsSingle := PSingle(@lvSwapData[0])^;
         end;
       $cb: // Float 64
         begin

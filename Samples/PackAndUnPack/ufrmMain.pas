@@ -118,7 +118,7 @@ begin
   lvmsgPack := TSimpleMsgPack.Create;
   lvMsgPack2 := TSimpleMsgPack.Create;
   try
-    lvmsgPack.AsFloat := 2.507182;
+    lvmsgPack.AsSingle := 2.507182;
 
     lvBytes := lvMsgPack.EncodeToBytes;
 
