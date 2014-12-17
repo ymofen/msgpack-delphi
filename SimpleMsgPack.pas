@@ -143,8 +143,8 @@ type
     FChildren: TObjectList;
   {$ENDIF}
 
-    procedure InnerAddToChildren(obj:TSimpleMsgPack);
-    function InnerAdd: TSimpleMsgPack;
+    procedure InnerAddToChildren(pvDataType: TMsgPackType; obj: TSimpleMsgPack);
+    function InnerAdd(pvDataType: TMsgPackType): TSimpleMsgPack;
     function GetCount: Integer;
     procedure InnerEncodeToStream(pvStream:TStream);
     procedure InnerParseFromStream(pvStream: TStream);
@@ -174,7 +174,7 @@ type
     procedure SetAsBytes(const Value: TBytes);
     function GetAsBytes: TBytes;
     
-    procedure checkObjectDataType(ANewType: TMsgPackType = mptMap);
+    procedure checkObjectDataType(ANewType: TMsgPackType);
 
     function findObj(pvName:string): TSimpleMsgPack;
     function indexOf(pvName:string): Integer;
@@ -869,14 +869,14 @@ end;
 
 function TSimpleMsgPack.Add(pvNameKey, pvValue: string): TSimpleMsgPack;
 begin
-  Result := InnerAdd;
+  Result := InnerAdd(mptMap);
   Result.setName(pvNameKey);
   Result.AsString := pvValue;
 end;
 
 function TSimpleMsgPack.Add(pvNameKey: string; pvValue: Int64): TSimpleMsgPack;
 begin
-  Result := InnerAdd;
+  Result := InnerAdd(mptMap);
   Result.setName(pvNameKey);
   Result.AsInteger := pvValue;
 end;
@@ -884,12 +884,12 @@ end;
 
 function TSimpleMsgPack.Add: TSimpleMsgPack;
 begin
-  Result := InnerAdd;
+  Result := InnerAdd(mptMap);
 end;
 
 function TSimpleMsgPack.Add(pvNameKey: string; pvValue: TBytes): TSimpleMsgPack;
 begin
-  Result := InnerAdd;
+  Result := InnerAdd(mptMap);
   Result.setName(pvNameKey);
   Result.FDataType := mptBinary;
   Result.FValue := pvValue;
@@ -897,13 +897,13 @@ end;
 
 function TSimpleMsgPack.Add(pvNameKey:String): TSimpleMsgPack;
 begin
-  Result := InnerAdd;
+  Result := InnerAdd(mptMap);
   Result.setName(pvNameKey);
 end;
 
-procedure TSimpleMsgPack.checkObjectDataType(ANewType: TMsgPackType = mptMap);
+procedure TSimpleMsgPack.checkObjectDataType(ANewType: TMsgPackType);
 begin
-  if not (FDataType in [mptMap]) then
+  if (FDataType <> ANewType) then
   begin
     FDataType := ANewType;
   end;
@@ -1313,16 +1313,17 @@ begin
   end;
 end;
 
-function TSimpleMsgPack.InnerAdd: TSimpleMsgPack;
+function TSimpleMsgPack.InnerAdd(pvDataType: TMsgPackType): TSimpleMsgPack;
 begin
   Result := TSimpleMsgPack.Create;
   Result.FDataType := mptUnknown;
-  InnerAddToChildren(Result);
+  InnerAddToChildren(pvDataType, Result);
 end;
 
-procedure TSimpleMsgPack.InnerAddToChildren(obj: TSimpleMsgPack);
+procedure TSimpleMsgPack.InnerAddToChildren(pvDataType: TMsgPackType; obj:
+    TSimpleMsgPack);
 begin
-  checkObjectDataType(mptMap);
+  checkObjectDataType(pvDataType);
   obj.FParent := self;
   FChildren.Add(obj);
 end;
@@ -1422,7 +1423,7 @@ begin
     begin
       for I := 0 to l - 1 do
       begin
-        lvObj := InnerAdd;
+        lvObj := InnerAdd(mptMap);
 
         // map key
         lvObj.InnerParseFromStream(pvStream);
@@ -1443,7 +1444,7 @@ begin
     begin
       for I := 0 to l - 1 do
       begin
-        lvObj := InnerAdd;
+        lvObj := InnerAdd(mptArray);
         // value
         lvObj.InnerParseFromStream(pvStream);
       end;
@@ -1598,8 +1599,7 @@ begin
           //      +--------+--------+--------+~~~~~~~~~~~~~~~~~+
           FDataType := mptArray;
           SetLength(FValue, 0);
-          FChildren.Clear;
-
+          FChildren.Clear; 
 
           l := 0; // fill zero
           pvStream.Read(l, 2);
@@ -1609,7 +1609,7 @@ begin
           begin
             for I := 0 to l - 1 do
             begin
-              lvObj := InnerAdd;
+              lvObj := InnerAdd(mptArray);
               // value
               lvObj.InnerParseFromStream(pvStream);
             end;
@@ -1633,7 +1633,7 @@ begin
           begin
             for I := 0 to l - 1 do
             begin
-              lvObj := InnerAdd;
+              lvObj := InnerAdd(mptArray);
               // value
               lvObj.InnerParseFromStream(pvStream);
             end;
@@ -1678,7 +1678,7 @@ begin
           begin
             for I := 0 to l - 1 do
             begin
-              lvObj := InnerAdd;
+              lvObj := InnerAdd(mptMap);
               // map key
               lvObj.InnerParseFromStream(pvStream);
               lvObj.setName(lvObj.getAsString);
@@ -1706,7 +1706,7 @@ begin
           begin
             for I := 0 to l - 1 do
             begin
-              lvObj := InnerAdd;
+              lvObj := InnerAdd(mptMap);
 
               // map key
               lvObj.InnerParseFromStream(pvStream);
@@ -2051,7 +2051,7 @@ begin
         end else
         begin
           Value.setName(lvName);
-          lvParent.InnerAddToChildren(Value);
+          lvParent.InnerAddToChildren(mptMap, Value);
         end;
       end else
       begin

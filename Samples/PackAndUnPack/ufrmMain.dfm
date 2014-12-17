@@ -100,4 +100,13 @@ object Form2: TForm2
     TabOrder = 9
     OnClick = btnFileClick
   end
+  object Button5: TButton
+    Left = 592
+    Top = 304
+    Width = 75
+    Height = 25
+    Caption = 'Button5'
+    TabOrder = 10
+    OnClick = Button5Click
+  end
 end

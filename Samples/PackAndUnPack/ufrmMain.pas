@@ -18,6 +18,7 @@ type
     btnCheckInteger: TButton;
     Button4: TButton;
     btnFile: TButton;
+    Button5: TButton;
     procedure btnDeleteClick(Sender: TObject);
     procedure btnTesterClick(Sender: TObject);
     procedure Button1Click(Sender: TObject);
@@ -26,6 +27,7 @@ type
     procedure btnCheckIntegerClick(Sender: TObject);
     procedure btnFileClick(Sender: TObject);
     procedure Button4Click(Sender: TObject);
+    procedure Button5Click(Sender: TObject);
   private
     { Private declarations }
   public
@@ -118,13 +120,14 @@ begin
   lvmsgPack := TSimpleMsgPack.Create;
   lvMsgPack2 := TSimpleMsgPack.Create;
   try
-    lvmsgPack.AsSingle := 2.507182;
+    lvmsgPack.AsInteger := ShortInt($E0);
 
     lvBytes := lvMsgPack.EncodeToBytes;
+    mmoOutPut.Lines.Add(TByteTools.varToHexString(lvBytes[0], Length(lvBytes)));
 
     lvMsgPack2.DecodeFromBytes(lvBytes);
 
-    ShowMessage(lvMsgPack2.AsString);
+    ShowMessage(IntToSTr(lvMsgPack2.AsInteger));
 
    // ShowMessage(lvMsgPack2.AsVariant);
 
@@ -207,6 +210,16 @@ begin
   PByte(IntPtr(@outVal) + 7)^ := PByte(@v)^;
 end;
 
+// v and outVal is can't the same value
+procedure swap32Ex(const v; out outVal);
+begin
+  // FF, EE, DD, CC : CC->1, DD->2, EE->3, FF->4
+  PByte(@outVal)^ := PByte(IntPtr(@v) + 3)^;
+  PByte(IntPtr(@outVal) + 1)^ := PByte(IntPtr(@v) + 2)^;
+  PByte(IntPtr(@outVal) + 2)^ := PByte(IntPtr(@v) + 1)^;
+  PByte(IntPtr(@outVal) + 3)^ := PByte(@v)^;
+end;
+
 //function swap(v: Double): Double;
 //var
 //  d1:Double;
@@ -223,8 +236,8 @@ var
   P2:TSimpleMsgPack;
 begin
   P:=TSimpleMsgPack.Create;
-  P.I['A']:=234;
-  P.SaveBinaryToFile('C:\a.txt');
+  P.I['A']:=234; 
+  P.EncodeToFile('C:\a.txt');
   P.Free;
 
 
@@ -239,14 +252,38 @@ end;
 procedure TForm2.Button4Click(Sender: TObject);
 var
   d, d1:Double;
+  s1, s2:Single;
+  i:Integer;
 begin
   d := 2.507182;
   mmoOutPut.Lines.Add(TByteTools.varToByteString(d, SizeOf(Double)));
 
-//  //swap64Ex(d, d1);
-//  d1 := swap(d);
-//  mmoOutPut.Lines.Add(TByteTools.varToByteString(d1, SizeOf(Double)));
+  swap64Ex(d, d1);
+  //d1 := swap(d);
+  mmoOutPut.Lines.Add(TByteTools.varToByteString(d1, SizeOf(Double)));
 
+  s1 := 1.1;
+  mmoOutPut.Lines.Add(TByteTools.varToByteString(s1, SizeOf(Single)));
+
+  swap32Ex(s1, i);
+  mmoOutPut.Lines.Add(TByteTools.varToByteString(i, SizeOf(Integer)));
+
+end;
+
+procedure TForm2.Button5Click(Sender: TObject);
+var
+  d, d2:SmallInt;
+  //lvBytes:TBytes;
+  lvBytes : array[0..1024*1024] of Byte;
+begin
+  //SetLength(lvBytes, 1000 * 1000 * 10);
+
+  mmoOutPut.Lines.Add(TByteTools.varToHexString(lvBytes[0], 10));
+
+  d := -128;
+  mmoOutPut.Lines.Add(TByteTools.varToHexString(d, SizeOf(SmallInt)));
+  d2 := Swap(d);
+  mmoOutPut.Lines.Add(TByteTools.varToHexString(d2, SizeOf(SmallInt)));
 
 end;
 
