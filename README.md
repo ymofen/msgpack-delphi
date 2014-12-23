@@ -4,7 +4,7 @@ It's like JSON but small and fast.
 
 ```
 unit Owner: D10.Mofen, qdac.swish
-contract:
+contact:
        qq:185511468, 
     email:185511468@qq.com
 welcome to report bug
