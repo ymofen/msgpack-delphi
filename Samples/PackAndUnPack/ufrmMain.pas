@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, SimpleMsgPack, uByteTools;
+  Dialogs, StdCtrls, SimpleMsgPack, uByteTools, DMsgPackHelper;
 
 type
   TForm2 = class(TForm)
@@ -19,12 +19,14 @@ type
     Button4: TButton;
     btnFile: TButton;
     Button5: TButton;
+    btnDMsgPacker: TButton;
     procedure btnDeleteClick(Sender: TObject);
     procedure btnTesterClick(Sender: TObject);
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
     procedure Button3Click(Sender: TObject);
     procedure btnCheckIntegerClick(Sender: TObject);
+    procedure btnDMsgPackerClick(Sender: TObject);
     procedure btnFileClick(Sender: TObject);
     procedure Button4Click(Sender: TObject);
     procedure Button5Click(Sender: TObject);
@@ -220,6 +222,50 @@ begin
   PByte(IntPtr(@outVal) + 3)^ := PByte(@v)^;
 end;
 
+procedure TForm2.btnDMsgPackerClick(Sender: TObject);
+var
+  lvStream:TFileStream;
+  lvBinary, lvReadStream:TMemoryStream;
+  s:AnsiString;
+  lvFile:string;
+  lvBytes:TBytes;
+begin
+  lvFile := 'C:\simplemsgpack.msgpack';
+  DeleteFile(lvFile);
+  lvBinary := TMemoryStream.Create;
+  s :='abc_中国人民解放军';
+  lvBinary.Write(PAnsiChar(s)^, length(s));
+  lvReadStream := TMemoryStream.Create;
+  lvStream := TFileStream.Create(lvFile, fmCreate);
+  TDMsgPackHelper.Write(lvStream, '中国人民解放军');
+  TDMsgPackHelper.Write(lvStream, lvBinary.Memory, lvBinary.Size);
+
+  lvStream.Position := 0;
+
+  mmoOutPut.Lines.Add(TDMsgPackHelper.ReadString(lvStream));
+  lvBytes := TDMsgPackHelper.ReadBinary(lvStream);
+  mmoOutPut.Lines.Add(TByteTools.varToHexString(lvBytes[0], Length(lvBytes)));
+
+
+
+  lvBinary.Free;
+  lvStream.Free;
+  lvReadStream.Free;
+//  P:=TSimpleMsgPack.Create;
+//  P.I['A']:=234;
+//  P.EncodeToFile('C:\a.txt');
+//  P.Free;
+//
+//
+//
+//  P2:=TSimpleMsgPack.Create;
+//  P2.DecodeFromFile('C:\a.txt');
+//  ShowMessage(IntToStr(P2.I['A']));
+//  P2.Free;
+
+
+end;
+
 //function swap(v: Double): Double;
 //var
 //  d1:Double;
@@ -236,7 +282,7 @@ var
   P2:TSimpleMsgPack;
 begin
   P:=TSimpleMsgPack.Create;
-  P.I['A']:=234; 
+  P.I['A']:=234;
   P.EncodeToFile('C:\a.txt');
   P.Free;
 

@@ -38,8 +38,8 @@ object Form2: TForm2
     TabOrder = 2
   end
   object btnDelete: TButton
-    Left = 592
-    Top = 72
+    Left = 568
+    Top = 64
     Width = 75
     Height = 25
     Caption = 'btnDelete'
@@ -47,8 +47,8 @@ object Form2: TForm2
     OnClick = btnDeleteClick
   end
   object Button1: TButton
-    Left = 592
-    Top = 103
+    Left = 568
+    Top = 95
     Width = 75
     Height = 25
     Caption = 'Button1'
@@ -56,8 +56,8 @@ object Form2: TForm2
     OnClick = Button1Click
   end
   object Button2: TButton
-    Left = 592
-    Top = 24
+    Left = 568
+    Top = 16
     Width = 75
     Height = 25
     Caption = 'Button2'
@@ -65,8 +65,8 @@ object Form2: TForm2
     OnClick = Button2Click
   end
   object Button3: TButton
-    Left = 592
-    Top = 159
+    Left = 568
+    Top = 151
     Width = 75
     Height = 25
     Caption = 'Button3'
@@ -74,8 +74,8 @@ object Form2: TForm2
     OnClick = Button3Click
   end
   object btnCheckInteger: TButton
-    Left = 592
-    Top = 215
+    Left = 568
+    Top = 207
     Width = 105
     Height = 25
     Caption = 'btnCheckInteger'
@@ -83,8 +83,8 @@ object Form2: TForm2
     OnClick = btnCheckIntegerClick
   end
   object Button4: TButton
-    Left = 592
-    Top = 263
+    Left = 568
+    Top = 255
     Width = 75
     Height = 25
     Caption = 'Button4'
@@ -92,7 +92,7 @@ object Form2: TForm2
     OnClick = Button4Click
   end
   object btnFile: TButton
-    Left = 328
+    Left = 112
     Top = 41
     Width = 75
     Height = 25
@@ -101,12 +101,21 @@ object Form2: TForm2
     OnClick = btnFileClick
   end
   object Button5: TButton
-    Left = 592
-    Top = 304
+    Left = 568
+    Top = 296
     Width = 75
     Height = 25
     Caption = 'Button5'
     TabOrder = 10
     OnClick = Button5Click
+  end
+  object btnDMsgPacker: TButton
+    Left = 248
+    Top = 41
+    Width = 113
+    Height = 25
+    Caption = 'btnDMsgPackHelper'
+    TabOrder = 11
+    OnClick = btnDMsgPackerClick
   end
 end

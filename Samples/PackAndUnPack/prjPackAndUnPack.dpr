@@ -4,7 +4,8 @@ uses
   Forms,
   ufrmMain in 'ufrmMain.pas' {Form2},
   SimpleMsgPack in '..\..\SimpleMsgPack.pas',
-  uByteTools in 'uByteTools.pas';
+  uByteTools in 'uByteTools.pas',
+  DMsgPackHelper in '..\..\DMsgPackHelper.pas';
 
 {$R *.res}
 
