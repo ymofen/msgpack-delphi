@@ -1955,10 +1955,10 @@ begin
     begin
       checkObjectDataType(mptArray);
       FChildren.Clear;
-      FDataType := mptArray;
       for I := VarArrayLowBound(Value, VarArrayDimCount(Value))
         to VarArrayHighBound(Value, VarArrayDimCount(Value)) do
         Add.AsVariant := Value[I];
+      FDataType := mptArray;
     end;
   end
   else
