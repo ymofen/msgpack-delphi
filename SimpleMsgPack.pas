@@ -35,6 +35,9 @@
      thanks fo [珠海]-芒果  1939331207
      2014-11-21 12:37:04
 
+   * add AddArrayChild func
+     2015-03-25 17:47:28
+
 
    samples:
      lvMsgPack:=TSimpleMsgPack.Create;
@@ -144,7 +147,8 @@ type
   {$ENDIF}
 
     procedure InnerAddToChildren(pvDataType: TMsgPackType; obj: TSimpleMsgPack);
-    function InnerAdd(pvDataType: TMsgPackType): TSimpleMsgPack;
+    function InnerAdd(pvDataType: TMsgPackType): TSimpleMsgPack; overload;
+    function InnerAdd():TSimpleMsgPack; overload;
     function GetCount: Integer;
     procedure InnerEncodeToStream(pvStream:TStream);
     procedure InnerParseFromStream(pvStream: TStream);
@@ -239,6 +243,8 @@ type
     function Add(pvNameKey: String): TSimpleMsgPack; overload;
     function Add():TSimpleMsgPack; overload;
 
+    function AddArrayChild():TSimpleMsgPack;
+
     function ForcePathObject(pvPath:string): TSimpleMsgPack;
 
     /// <summary>
@@ -270,6 +276,7 @@ implementation
 
 resourcestring
   SVariantConvertNotSupport = 'type to convert not support!。';
+  SCannotAddChild = 'Can''t add child in this node!';
 
 
 function swap16(const v): Word;
@@ -887,6 +894,16 @@ begin
   Result := InnerAdd(mptMap);
 end;
 
+function TSimpleMsgPack.AddArrayChild: TSimpleMsgPack;
+begin
+  if FDataType <> mptArray then
+  begin
+    clear();
+    FDataType := mptArray;
+  end;
+  Result := InnerAdd;
+end;
+
 function TSimpleMsgPack.Add(pvNameKey: string; pvValue: TBytes): TSimpleMsgPack;
 begin
   Result := InnerAdd(mptMap);
@@ -1318,6 +1335,23 @@ begin
   Result := TSimpleMsgPack.Create;
   Result.FDataType := mptUnknown;
   InnerAddToChildren(pvDataType, Result);
+end;
+
+function TSimpleMsgPack.InnerAdd: TSimpleMsgPack;
+begin
+  if self.FDataType in [mptMap, mptArray] then
+  begin
+    Result := TSimpleMsgPack.Create;
+    Result.FDataType := mptUnknown;
+    Result.FParent := self;
+    FChildren.Add(Result);
+  end else
+  begin
+    raise Exception.Create(SCannotAddChild);
+  end;
+
+
+
 end;
 
 procedure TSimpleMsgPack.InnerAddToChildren(pvDataType: TMsgPackType; obj:
