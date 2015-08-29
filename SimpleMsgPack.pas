@@ -38,6 +38,9 @@
    * add AddArrayChild func
      2015-03-25 17:47:28
 
+   * add remove/removeFromParent/Delete function
+     2015-08-29 22:37:48
+
 
    samples:
      lvMsgPack:=TSimpleMsgPack.Create;
@@ -141,9 +144,9 @@ type
     FDataType:TMsgPackType;
 
   {$IFDEF UNICODE}
-    FChildren: TObjectList<TSimpleMsgPack>;
+    FChildren: TList<TSimpleMsgPack>;
   {$ELSE}
-    FChildren: TObjectList;
+    FChildren: TList;
   {$ENDIF}
 
     procedure InnerAddToChildren(pvDataType: TMsgPackType; obj: TSimpleMsgPack);
@@ -190,8 +193,12 @@ type
 
 
     /// <summary>
-    ///   find object index by a path 
+    ///   通过路径查找子对象
     /// </summary>
+    /// <param name="pvPath">要查找的子对象路径 比如: 'p1.age' </param>
+    /// <param name="vParent">查找到的子对象的父对象</param>
+    /// <param name="vIndex">查找到的子对象所在父对象的索引值</param>
+    /// <returns>返回找到的子对象</returns>
     function InnerFindPathObject(pvPath: string; var vParent: TSimpleMsgPack; var
         vIndex: Integer): TSimpleMsgPack;
 
@@ -212,12 +219,19 @@ type
 
     function GetItems(AIndex: Integer): TSimpleMsgPack;
 
+    /// <summary>
+    ///  释放所有子对象，并清空子对象列表
+    /// </summary>
+    procedure ClearAndFreeAllChildren;
 
   public
     constructor Create;
     destructor Destroy; override;
 
-    procedure clear;
+    /// <summary>
+    ///   清空子对象以及本身值(null)
+    /// </summary>
+    procedure Clear;
 
     property Count: Integer read GetCount;
 
@@ -248,10 +262,51 @@ type
     function ForcePathObject(pvPath:string): TSimpleMsgPack;
 
     /// <summary>
-    ///  remove and free object
-    ///    false : object is not found!
+    ///  移除并释放对象
     /// </summary>
+    /// <param name="pvPath">要移除的对象路径, 比如: 'p1.age' </param>
+    /// <returns>如果移除成功返回true, 否则返回false(对象不存在)</returns>
     function DeleteObject(pvPath:String):Boolean;
+
+    /// <summary>
+    ///   根据索引值删除并释放对象
+    /// </summary>
+    /// <param name="pvIndex">子对象的索引值</param>
+    /// <returns>如果移除成功返回true, 否则返回false(超出索引范围)</returns>
+    function Delete(pvIndex:Integer):Boolean;
+    
+    /// <summary>
+    ///  移除子对象,并不释放子对象
+    /// </summary>
+    /// <param name="pvPath">要移除的对象路径, 比如: 'p1.age' </param>
+    /// <returns>如果移除成功返回移除的子对象, 否则返回nil(对象不存在)</returns>
+    function Remove(pvPath:string): TSimpleMsgPack; overload;
+
+    /// <summary>
+    ///  移除子对象,并不释放子对象
+    /// </summary>
+    /// <param name="pvIndex">子对象的索引值</param>
+    /// <returns>如果移除成功返回移除的子对象, 否则返回nil(索引超出范围)</returns>
+    function Remove(pvIndex:Integer): TSimpleMsgPack; overload;
+
+    /// <summary>
+    ///  移除子对象,并不释放子对象
+    /// </summary>
+    /// <param name="pvChild">要移除的对象</param>
+    /// <returns>如果移除成功返回true, 否则返回false(对象不是该子对象)</returns>
+    function Remove(pvChild:TSimpleMsgPack): Boolean; overload;
+
+
+
+    /// <summary>
+    ///   从父对象中移除
+    /// </summary>
+    procedure RemoveFromParent();
+
+
+
+
+
 
     property AsInteger:Int64 read getAsInteger write setAsInteger;
     property AsString:string read getAsString write setAsString;
@@ -811,9 +866,9 @@ constructor TSimpleMsgPack.Create;
 begin
   inherited Create;
   {$IFDEF UNICODE}
-    FChildren := TObjectList<TSimpleMsgPack>.Create(true);
+    FChildren := TList<TSimpleMsgPack>.Create();
   {$ELSE}
-    FChildren := TObjectList.Create(true);
+    FChildren := TList.Create();
   {$ENDIF}
 
 end;
@@ -853,6 +908,19 @@ begin
   InnerParseFromStream(pvStream);
 end;
 
+function TSimpleMsgPack.Delete(pvIndex: Integer): Boolean;
+begin
+  if (pvIndex < 0) or (pvIndex >= Count) then
+  begin
+    Result := false;
+  end else
+  begin
+    TObject(FChildren[pvIndex]).Free;
+    FChildren.Delete(pvIndex);
+    Result := True;
+  end;  
+end;
+
 function TSimpleMsgPack.DeleteObject(pvPath: String): Boolean;
 var
   lvParent, lvObj:TSimpleMsgPack;
@@ -863,12 +931,13 @@ begin
   if Result then
   begin
     lvParent.FChildren.Delete(j);
+    lvObj.Free;
   end;
 end;
 
 destructor TSimpleMsgPack.Destroy;
 begin
-  FChildren.Clear;
+  ClearAndFreeAllChildren;
   FChildren.Free;
   FChildren := nil;
   inherited Destroy;
@@ -898,7 +967,7 @@ function TSimpleMsgPack.AddArrayChild: TSimpleMsgPack;
 begin
   if FDataType <> mptArray then
   begin
-    clear();
+    Clear();
     FDataType := mptArray;
   end;
   Result := InnerAdd;
@@ -926,9 +995,9 @@ begin
   end;
 end;
 
-procedure TSimpleMsgPack.clear;
+procedure TSimpleMsgPack.Clear;
 begin
-  FChildren.Clear;
+  ClearAndFreeAllChildren;
   FDataType := mptNull;
   SetLength(FValue, 0);
 end;
@@ -1030,6 +1099,17 @@ begin
     if sPtr^ = #0 then Break;
     Inc(sPtr);
   end;
+end;
+
+procedure TSimpleMsgPack.ClearAndFreeAllChildren;
+var
+  i:Integer;
+begin
+  for i := 0 to FChildren.Count - 1 do
+  begin
+    TObject(FChildren[i]).Free;  
+  end;
+  FChildren.Clear;  
 end;
 
 function TSimpleMsgPack.GetAsBoolean: Boolean;
@@ -1880,6 +1960,43 @@ begin
   begin
     SetLength(FValue, pvLen);
     pvStream.ReadBuffer(FValue[0], pvLen);
+  end;
+end;
+
+function TSimpleMsgPack.Remove(pvPath:string): TSimpleMsgPack;
+var
+  lvParent:TSimpleMsgPack;
+  j:Integer;
+begin
+  Result := InnerFindPathObject(pvPath, lvParent, j);
+  if Result<>nil then
+  begin
+    lvParent.FChildren.Delete(j);
+  end;
+end;
+
+function TSimpleMsgPack.Remove(pvIndex:Integer): TSimpleMsgPack;
+begin
+  if (pvIndex < 0) or (pvIndex >= Count) then
+  begin
+    Result := nil;
+  end else
+  begin
+    Result := TSimpleMsgPack(FChildren[pvIndex]);
+    FChildren.Delete(pvIndex);
+  end;
+end;
+
+function TSimpleMsgPack.Remove(pvChild:TSimpleMsgPack): Boolean;
+begin
+  Result := FChildren.Remove(pvChild) <> -1;
+end;
+
+procedure TSimpleMsgPack.RemoveFromParent;
+begin
+  if FParent <> nil then
+  begin
+    FParent.FChildren.Remove(Self);
   end;
 end;
 

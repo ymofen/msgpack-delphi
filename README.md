@@ -18,21 +18,40 @@ Works with
 
 changes:
 --------
+   + first release
+     2014-08-15 13:05:13
+
+   + add array support
+     2014-08-19 12:18:47
+
+   + add andriod support
+     2014-09-08 00:45:27
+	
    * fixed int32, int64 parse bug< integer, int64 parse zero>
      2014-11-09 22:35:27
-     
+
    + add EncodeToFile/DecodeFromFile
      2014-11-13 12:30:58
 
    * fix  asVariant = null (thanks for cyw(26890954))
      2014-11-14 09:05:52
-     
+
    * fix AsInteger = -1 bug (thanks for cyw(26890954))
      2014-11-14 12:15:52
 
    * fix AsInteger = -127 bug
      check int64/integer/cardinal/word/shortint/smallint/byte assign, encode,decode, read
      2014-11-14 12:30:38
+
+   * fix AsFloat = 2.507182 bug
+     thanks fo [珠海]-芒果  1939331207
+     2014-11-21 12:37:04
+
+   * add AddArrayChild func
+     2015-03-25 17:47:28
+
+   * add remove/removeFromParent/Delete function
+     2015-08-29 22:37:48
 
   
 ### Code Example
