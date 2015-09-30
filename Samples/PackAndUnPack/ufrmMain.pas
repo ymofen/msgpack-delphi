@@ -20,6 +20,8 @@ type
     btnFile: TButton;
     Button5: TButton;
     btnDMsgPacker: TButton;
+    btnCheckInt2: TButton;
+    procedure btnCheckInt2Click(Sender: TObject);
     procedure btnDeleteClick(Sender: TObject);
     procedure btnTesterClick(Sender: TObject);
     procedure Button1Click(Sender: TObject);
@@ -220,6 +222,93 @@ begin
   PByte(IntPtr(@outVal) + 1)^ := PByte(IntPtr(@v) + 2)^;
   PByte(IntPtr(@outVal) + 2)^ := PByte(IntPtr(@v) + 1)^;
   PByte(IntPtr(@outVal) + 3)^ := PByte(@v)^;
+end;
+
+procedure TForm2.btnCheckInt2Click(Sender: TObject);
+var
+  lvStream:TMemoryStream;
+  lvBytes:TBytes;
+  i, z, j,  t2: Int64;
+  t:Cardinal;
+begin
+
+  t := GetTickCount;
+  lvStream := TMemoryStream.Create;
+  try
+    z := Low(Int64);
+    j := z + 10000000 - 1;
+
+    i := z;
+
+    t2 := 0;
+    while i <= j do
+    begin
+      lvStream.Position := 0;
+      TDMsgPackHelper.Write(lvStream, i);
+      lvStream.Position := 0;
+      Assert(i = TDMsgPackHelper.ReadInt(lvStream));
+      i := i + 1;
+      inc(t2);
+    end;
+
+    ShowMessage(format('succ[%d: %d]', [t2, getTickcount- t]));
+
+    z := Low(Integer);
+    j := z + 10000000 - 1;
+
+    i := z;
+
+    t2 := 0;
+    while i <= j do
+    begin
+      lvStream.Position := 0;
+      TDMsgPackHelper.Write(lvStream, i);
+      lvStream.Position := 0;
+      Assert(i = TDMsgPackHelper.ReadInt(lvStream));
+      i := i + 1;
+      inc(t2);
+    end;
+    ShowMessage(format('succ[%d: %d]', [t2, getTickcount- t]));
+
+    z := Low(SmallInt);
+    j := z + 10000000 - 1;
+
+    i := z;
+
+    t2 := 0;
+    while i <= j do
+    begin
+      lvStream.Position := 0;
+      TDMsgPackHelper.Write(lvStream, i);
+      lvStream.Position := 0;
+      Assert(i = TDMsgPackHelper.ReadInt(lvStream));
+      i := i + 1;
+      inc(t2);
+    end;
+    ShowMessage(format('succ[%d: %d]', [t2, getTickcount- t]));
+
+
+    z := High(Int64) - 10000000;
+    j := High(Int64) - 1;      // 必须-1 , i:=i+1的时候会超过时会出现问题
+
+    i := z;
+
+    t2 := 0;
+    while i <= j do
+    begin
+      lvStream.Position := 0;
+      TDMsgPackHelper.Write(lvStream, i);
+      lvStream.Position := 0;
+      Assert(i = TDMsgPackHelper.ReadInt(lvStream));
+      i := i + 1;
+      inc(t2);
+    end;
+    ShowMessage(format('succ[%d: %d]', [t2, getTickcount- t]));
+  finally
+    lvStream.Free;
+  end;
+
+
 end;
 
 procedure TForm2.btnDMsgPackerClick(Sender: TObject);

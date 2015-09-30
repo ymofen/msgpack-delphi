@@ -75,7 +75,7 @@ object Form2: TForm2
   end
   object btnCheckInteger: TButton
     Left = 568
-    Top = 207
+    Top = 182
     Width = 105
     Height = 25
     Caption = 'btnCheckInteger'
@@ -117,5 +117,14 @@ object Form2: TForm2
     Caption = 'btnDMsgPackHelper'
     TabOrder = 11
     OnClick = btnDMsgPackerClick
+  end
+  object btnCheckInt2: TButton
+    Left = 568
+    Top = 213
+    Width = 105
+    Height = 25
+    Caption = 'btnCheckInteger2'
+    TabOrder = 12
+    OnClick = btnCheckInt2Click
   end
 end

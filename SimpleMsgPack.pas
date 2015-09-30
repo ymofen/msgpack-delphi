@@ -737,7 +737,10 @@ end;
 procedure WriteFloat(pvVal: Double; AStream: TStream);
 var
   lvValue:TMsgPackValue;
-begin 
+begin
+  
+
+  
   lvValue.i64Val := swap(pvVal);
   lvValue.ValueType := $CB;
   AStream.WriteBuffer(lvValue, 9);
