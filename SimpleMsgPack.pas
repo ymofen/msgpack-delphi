@@ -609,7 +609,11 @@ begin
     pvStream.WriteBuffer(lvValue,5);
   end;
 
+  {$IFDEF UNICODE}
+  pvStream.Write(PByte(@lvRawData[0])^, l);
+  {$ELSE}
   pvStream.Write(PByte(lvRawData)^, l);
+  {$ENDIF};
 end;
 
 procedure WriteBinary(p: PByte; l: Integer; pvStream: TStream);
