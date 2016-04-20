@@ -257,7 +257,20 @@ type
     function Add(pvNameKey: String): TSimpleMsgPack; overload;
     function Add():TSimpleMsgPack; overload;
 
-    function AddArrayChild():TSimpleMsgPack;
+    /// <summary>
+    ///   添加一个子对象,并负责对象的生命周期
+    /// </summary>
+    function Add(pvNameKey: string; pvValue:TSimpleMsgPack): TSimpleMsgPack;
+        overload;
+
+    function AddArrayChild():TSimpleMsgPack; overload;
+
+    /// <summary>
+    ///   添加一个子对象,并负责对象的生命周期
+    /// </summary>
+    function AddArrayChild(pvValue:TSimpleMsgPack): TSimpleMsgPack; overload;
+
+
 
     function ForcePathObject(pvPath:string): TSimpleMsgPack;
 
@@ -988,6 +1001,20 @@ function TSimpleMsgPack.Add(pvNameKey:String): TSimpleMsgPack;
 begin
   Result := InnerAdd(mptMap);
   Result.setName(pvNameKey);
+end;
+
+function TSimpleMsgPack.Add(pvNameKey: string; pvValue:TSimpleMsgPack):
+    TSimpleMsgPack;
+begin
+  InnerAddToChildren(mptMap, pvValue);
+  pvValue.FName := pvNameKey;
+  Result := pvValue;
+end;
+
+function TSimpleMsgPack.AddArrayChild(pvValue:TSimpleMsgPack): TSimpleMsgPack;
+begin
+  InnerAddToChildren(mptArray, pvValue);
+  Result := pvValue;
 end;
 
 procedure TSimpleMsgPack.checkObjectDataType(ANewType: TMsgPackType);
