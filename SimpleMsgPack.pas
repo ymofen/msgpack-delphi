@@ -622,7 +622,11 @@ begin
     pvStream.WriteBuffer(lvValue,5);
   end;
 
+  {$IFDEF UNICODE}
+  pvStream.Write(PByte(@lvRawData[0])^, l);
+  {$ELSE}
   pvStream.Write(PByte(lvRawData)^, l);
+  {$ENDIF};
 end;
 
 procedure WriteBinary(p: PByte; l: Integer; pvStream: TStream);
@@ -1139,7 +1143,7 @@ begin
   begin
     TObject(FChildren[i]).Free;  
   end;
-  FChildren.Clear;  
+  FChildren.Clear;
 end;
 
 function TSimpleMsgPack.GetAsBoolean: Boolean;
@@ -1561,7 +1565,7 @@ begin
   begin
     FDataType := mptMap;
     SetLength(FValue, 0);
-    FChildren.Clear;
+    ClearAndFreeAllChildren;
     l := lvByte - $80;
     if l > 0 then  // check is empty ele
     begin
@@ -1581,7 +1585,7 @@ begin
   begin
     FDataType := mptArray;
     SetLength(FValue, 0);
-    FChildren.Clear;
+    ClearAndFreeAllChildren;
 
     l := lvByte - $90;
     if l > 0 then  // check is empty ele
@@ -1743,7 +1747,7 @@ begin
           //      +--------+--------+--------+~~~~~~~~~~~~~~~~~+
           FDataType := mptArray;
           SetLength(FValue, 0);
-          FChildren.Clear; 
+          ClearAndFreeAllChildren; 
 
           l := 0; // fill zero
           pvStream.Read(l, 2);
@@ -1766,7 +1770,7 @@ begin
         //  +--------+--------+--------+--------+--------+~~~~~~~~~~~~~~~~~+
           FDataType := mptArray;
           SetLength(FValue, 0);
-          FChildren.Clear;
+          ClearAndFreeAllChildren;
 
 
           l := 0; // fill zero
@@ -1812,7 +1816,7 @@ begin
           //    +--------+--------+--------+~~~~~~~~~~~~~~~~~+
           FDataType := mptMap;
           SetLength(FValue, 0);
-          FChildren.Clear;
+          ClearAndFreeAllChildren;
 
 
           l := 0; // fill zero
@@ -1839,7 +1843,7 @@ begin
           //    +--------+--------+--------+--------+--------+~~~~~~~~~~~~~~~~~+
           FDataType := mptMap;
           SetLength(FValue, 0);
-          FChildren.Clear;
+          ClearAndFreeAllChildren;
 
 
           l := 0; // fill zero
@@ -2135,7 +2139,7 @@ begin
     else
     begin
       checkObjectDataType(mptArray);
-      FChildren.Clear;
+      ClearAndFreeAllChildren;
       for I := VarArrayLowBound(Value, VarArrayDimCount(Value))
         to VarArrayHighBound(Value, VarArrayDimCount(Value)) do
         Add.AsVariant := Value[I];
