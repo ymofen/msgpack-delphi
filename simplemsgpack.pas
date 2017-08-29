@@ -77,7 +77,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      
 
 *)
+{
+  * add free pascal support by cpicanco
+    2017-08-29 13:34:00
+}
 unit SimpleMsgPack;
+
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
 
 interface
 
@@ -86,6 +94,12 @@ uses
   {$IFDEF UNICODE}, Generics.Collections{$ELSE}, Contnrs{$ENDIF}
   {$IFDEF MSWINDOWS}, Windows{$ENDIF}
   ,Variants;
+
+{$IFDEF FPC}
+  {$I fpc.inc}
+type
+  PBOOLEAN = ^ByteBool;
+{$ENDIF}
 
 type
   {$IF RTLVersion<25}
@@ -330,7 +344,8 @@ type
     property AsVariant: Variant read GetAsVariant write SetAsVariant;
 
     property AsBytes: TBytes read GetAsBytes write SetAsBytes;
-
+    property Key : string read FName; // for Items only
+    property Value : string read getAsString; // alias for AsString
     property O[pvPath: String]: TSimpleMsgPack read GetO write SetO;
     property S[pvPath: String]: string read GetS write SetS;
     property I[pvPath: String]: Int64 read GetI write SetI;
@@ -2097,6 +2112,20 @@ begin
   PSingle(FValue)^ := Value;
 end;
 
+{$IFDEF FPC}
+procedure TSimpleMsgPack.setAsString(pvValue: string);
+var l : SizeInt;
+begin
+  FDataType := mptString;
+  if SizeOf(Char) = 2 then
+    l := Length(pvValue) shl 1
+  else
+    l := Length(pvValue);
+  SetLength(FValue, l);
+  if l > 0 then
+    Move(PChar(pvValue)^, FValue[0], l);
+end;
+{$ELSE}
 procedure TSimpleMsgPack.setAsString(pvValue: string);
 begin
   FDataType := mptString;
@@ -2110,6 +2139,7 @@ begin
     Move(PChar(pvValue)^, FValue[0], Length(FValue));
   end;
 end;
+{$ENDIF}
 
 /// <summary>
 ///   copy from qdac3
