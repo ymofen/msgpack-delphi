@@ -1,5 +1,6 @@
 unit DMsgPackHelper;
 {$IFDEF FPC}
+  {$MODE Delphi}
   {$I fpc.inc}
 {$ENDIF}
 interface
