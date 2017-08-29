@@ -2108,6 +2108,20 @@ begin
   PSingle(FValue)^ := Value;
 end;
 
+{$IFDEF FPC}
+procedure TSimpleMsgPack.setAsString(pvValue: string);
+var l : SizeInt;
+begin
+  FDataType := mptString;
+  if SizeOf(Char) = 2 then
+    l := Length(pvValue) shl 1
+  else
+    l := Length(pvValue);
+  SetLength(FValue, l);
+  if l > 0 then
+    Move(PChar(pvValue)^, FValue[0], l);
+end;
+{$ELSE}
 procedure TSimpleMsgPack.setAsString(pvValue: string);
 begin
   FDataType := mptString;
@@ -2121,6 +2135,7 @@ begin
     Move(PChar(pvValue)^, FValue[0], Length(FValue));
   end;
 end;
+{$ENDIF}
 
 /// <summary>
 ///   copy from qdac3
