@@ -340,7 +340,8 @@ type
     property AsVariant: Variant read GetAsVariant write SetAsVariant;
 
     property AsBytes: TBytes read GetAsBytes write SetAsBytes;
-
+    property Key : string read FName; // for Items only
+    property Value : string read getAsString; // alias for AsString
     property O[pvPath: String]: TSimpleMsgPack read GetO write SetO;
     property S[pvPath: String]: string read GetS write SetS;
     property I[pvPath: String]: Int64 read GetI write SetI;
