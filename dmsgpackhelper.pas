@@ -1,5 +1,7 @@
 unit DMsgPackHelper;
-
+{$IFDEF FPC}
+  {$I fpc.inc}
+{$ENDIF}
 interface
 
 uses

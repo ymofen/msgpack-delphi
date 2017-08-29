@@ -77,6 +77,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      
 
 *)
+{
+  * add free pascal support by cpicanco
+    2017-08-29 13:34:00
+}
 unit SimpleMsgPack;
 
 interface
@@ -86,6 +90,12 @@ uses
   {$IFDEF UNICODE}, Generics.Collections{$ELSE}, Contnrs{$ENDIF}
   {$IFDEF MSWINDOWS}, Windows{$ENDIF}
   ,Variants;
+
+{$IFDEF FPC}
+  {$I fpc.inc}
+type
+  PBOOLEAN = ^ByteBool;
+{$ENDIF}
 
 type
   {$IF RTLVersion<25}
